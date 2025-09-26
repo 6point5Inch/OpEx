@@ -1,3 +1,5 @@
+import { TradingInterface } from "@/components/trading-interface";
+
 export default function Home() {
-  return <div>Hello world</div>;
+  return <TradingInterface />;
 }
