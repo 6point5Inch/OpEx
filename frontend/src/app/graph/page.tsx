@@ -21,6 +21,7 @@ export default function Graph() {
 
   return (
     <div>
+      samosa
       <Chart
         chartType="CandlestickChart"
         width="100%"
