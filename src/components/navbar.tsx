@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navbar() {
   const handleConnectWallet = () => {
@@ -15,11 +16,12 @@ export function Navbar() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center space-x-2">
             <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
-              Trading Niggas
+              Genuine Trade
             </h1>
           </div>
 
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <Button
               onClick={handleConnectWallet}
               variant="outline"
