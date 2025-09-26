@@ -1,15 +1,10 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { CustomConnectButton } from "@/components/custom-connect-button";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navbar() {
-  const handleConnectWallet = () => {
-    // TODO: Implement wallet connection logic
-    console.log("Connect wallet clicked");
-  };
-
   return (
     <>
       <nav className="sticky top-0 z-50 w-full border-b border-stone-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-stone-800 dark:bg-stone-950/95 dark:supports-[backdrop-filter]:bg-stone-950/60">
@@ -22,13 +17,7 @@ export function Navbar() {
 
           <div className="flex items-center space-x-4">
             <ThemeToggle />
-            <Button
-              onClick={handleConnectWallet}
-              variant="outline"
-              className="border-stone-300 text-stone-700 hover:bg-stone-50 hover:text-stone-900 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800 dark:hover:text-stone-100"
-            >
-              Connect Wallet
-            </Button>
+            <CustomConnectButton />
           </div>
         </div>
       </nav>
