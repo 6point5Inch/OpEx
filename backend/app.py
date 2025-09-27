@@ -17,6 +17,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection, RowMapping
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime
 
 # -------------------------
 # Flask + SocketIO setup
@@ -45,7 +46,7 @@ DB_NAME = "crypto_info"
 DB_USER = "postgres"
 DB_PASSWORD = "mypassword"
 DB_HOST = "localhost"
-DB_PORT = "5432"
+DB_PORT = "5433"
 
 ALLOWED_SORT = {"createdAt", "takerRate", "makerRate", "makerAmount", "takerAmount"}
 
@@ -478,22 +479,21 @@ def create_order():
         "option_expiry": body.get("optionExpiry"),
         "option_type": body.get("optionType"),
         "option_premium": body.get("optionPremium"),
-        "signature_r": body.get("signatureR"),
-        "signature_vs": body.get("signatureVs"),
+        "signature": body.get("signature"),
         "extension_data": body.get("extensionData"),
         "status": "open",
-        "valid_at": body.get("validAt")
+        "valid_at": datetime.fromtimestamp(body.get("validAt"), tz=timezone.utc) if body.get("validAt") else None
     }
     
     insert_sql = text("""
         INSERT INTO orders (
             order_hash, maker, maker_asset, taker_asset, making_amount, taking_amount,
             salt, maker_traits, order_data, option_strike, option_expiry, option_type,
-            option_premium, signature_r, signature_vs, extension_data, status, valid_at
+            option_premium, signature, extension_data, status, valid_at
         ) VALUES (
             :order_hash, :maker, :maker_asset, :taker_asset, :making_amount, :taking_amount,
             :salt, :maker_traits, :order_data, :option_strike, :option_expiry, :option_type,
-            :option_premium, :signature_r, :signature_vs, :extension_data, :status, :valid_at
+            :option_premium, :signature, :extension_data, :status, :valid_at
         )
     """)
     
@@ -513,14 +513,10 @@ def create_order():
 def get_orders():
     # Parse query parameters
     status = request.args.get("status", "open")
-    maker = request.args.get("maker")
     maker_asset = request.args.get("makerAsset")
     taker_asset = request.args.get("takerAsset")
     limit = min(int(request.args.get("limit", "50")), 100)
     
-    # Validate addresses if provided
-    if maker:
-        validate_address(maker, "maker")
     if maker_asset:
         validate_address(maker_asset, "makerAsset")
     if taker_asset:
@@ -530,9 +526,6 @@ def get_orders():
     where_clauses = ["status = :status"]
     params = {"status": status, "limit": limit}
     
-    if maker:
-        where_clauses.append("maker = :maker")
-        params["maker"] = maker
     if maker_asset:
         where_clauses.append("maker_asset = :maker_asset")
         params["maker_asset"] = maker_asset

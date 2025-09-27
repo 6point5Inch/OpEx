@@ -9,7 +9,7 @@ DB_NAME = "crypto_info"
 DB_USER = "postgres"
 DB_PASSWORD = "mypassword"
 DB_HOST = "localhost"
-DB_PORT = "5432"
+DB_PORT = "5433"
 
 engine = create_engine(f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 
