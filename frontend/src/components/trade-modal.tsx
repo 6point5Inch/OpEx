@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 import { SelectedOption, OptionSide } from "@/types/options";
 import { Chart } from "react-google-charts";
 import { useRealTimeChartData } from "@/hooks/useRealTimeChartData";
@@ -36,60 +36,6 @@ const getChartOptions = (isDark: boolean = false) => ({
   },
 });
 
-// Create placeholder order book data with -69 values where data is not available
-const createOrderBookData = (selectedOption: SelectedOption) => [
-  { price: selectedOption.data.ask, size: -69, ivPercent: -69, side: "ask" },
-  {
-    price: selectedOption.data.ask * 0.98,
-    size: -69,
-    ivPercent: -69,
-    side: "ask",
-  },
-  {
-    price: selectedOption.data.ask * 0.96,
-    size: -69,
-    ivPercent: -69,
-    side: "ask",
-  },
-  {
-    price: selectedOption.data.ask * 0.94,
-    size: -69,
-    ivPercent: -69,
-    side: "ask",
-  },
-  {
-    price: selectedOption.data.ask * 0.92,
-    size: -69,
-    ivPercent: -69,
-    side: "ask",
-  },
-  { price: selectedOption.data.bid, size: -69, ivPercent: -69, side: "bid" },
-  {
-    price: selectedOption.data.bid * 1.02,
-    size: -69,
-    ivPercent: -69,
-    side: "bid",
-  },
-  {
-    price: selectedOption.data.bid * 1.04,
-    size: -69,
-    ivPercent: -69,
-    side: "bid",
-  },
-  {
-    price: selectedOption.data.bid * 1.06,
-    size: -69,
-    ivPercent: -69,
-    side: "bid",
-  },
-  {
-    price: selectedOption.data.bid * 1.08,
-    size: -69,
-    ivPercent: -69,
-    side: "bid",
-  },
-];
-
 // Trading content component using Aceternity's modal system
 const TradeModalContent = ({
   selectedOption,
@@ -102,7 +48,6 @@ const TradeModalContent = ({
 }) => {
   const [side, setSide] = useState<OptionSide>("buy");
   const [contracts, setContracts] = useState<string>("1");
-  const [activeTab, setActiveTab] = useState<string>("orderbook");
 
   // Real-time chart data hook
   const {
@@ -163,38 +108,6 @@ const TradeModalContent = ({
       side === "buy" ? selectedOption.data.ask : selectedOption.data.bid;
     return price * parseFloat(contracts || "0");
   };
-
-  // Create order book data based on selected option
-  const orderBookData = createOrderBookData(selectedOption);
-
-  // Order Book Component
-  const OrderBookTab = () => (
-    <div className="h-full overflow-auto">
-      <div className="grid grid-cols-4 gap-4 text-xs font-semibold text-gray-400 mb-2 px-2">
-        <div>Total</div>
-        <div>Size</div>
-        <div>IV %</div>
-        <div>Price</div>
-      </div>
-      <div className="space-y-1">
-        {orderBookData.map((order, index) => (
-          <div
-            key={`${order.side}-${order.price}-${index}`}
-            className={`grid grid-cols-4 gap-4 text-sm px-2 py-1 rounded ${
-              order.side === "ask"
-                ? "bg-red-900/20 text-red-300"
-                : "bg-green-900/20 text-green-300"
-            }`}
-          >
-            <div>{formatNumber(order.size)}</div>
-            <div>{formatNumber(order.size)}</div>
-            <div>{formatNumber(order.ivPercent, 1)}</div>
-            <div className="font-medium">{formatNumber(order.price, 4)}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   // Chart Component
   const ChartTab = () => {
@@ -418,36 +331,11 @@ const TradeModalContent = ({
         </div>
       </div>
 
-      {/* Right Panel - Tabs */}
+      {/* Right Panel - Chart Only */}
       <div className="w-2/3 flex flex-col p-4">
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="flex-1 flex flex-col"
-        >
-          <TabsList className="grid w-full grid-cols-2 bg-gray-800 mb-4">
-            <TabsTrigger
-              value="orderbook"
-              className="text-white data-[state=active]:bg-gray-700"
-            >
-              Order Book
-            </TabsTrigger>
-            <TabsTrigger
-              value="chart"
-              className="text-white data-[state=active]:bg-gray-700"
-            >
-              Chart
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="orderbook" className="flex-1 mt-0">
-            <OrderBookTab />
-          </TabsContent>
-
-          <TabsContent value="chart" className="flex-1 mt-0">
-            <ChartTab />
-          </TabsContent>
-        </Tabs>
+        <div className="flex-1">
+          <ChartTab />
+        </div>
       </div>
     </div>
   );
