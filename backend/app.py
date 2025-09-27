@@ -382,13 +382,13 @@ def get_orders_by_address(chainId: str, address: str):
     return jsonify(items)
 
 
-@app.get("/<chainId>/order/<orderHash>")
-def get_order_by_hash(chainId: str, orderHash: str):
-    with get_db() as conn:
-        row = conn.execute(text("SELECT * FROM orders WHERE orderHash = :h"), {"h": orderHash}).mappings().first()
-    if not row:
-        return jsonify([]), 200
-    return jsonify(serialize_order(row)), 200
+# @app.get("/<chainId>/order/<orderHash>")
+# def get_order_by_hash(chainId: str, orderHash: str):
+#     with get_db() as conn:
+#         row = conn.execute(text("SELECT * FROM orders WHERE orderHash = :h"), {"h": orderHash}).mappings().first()
+#     if not row:
+#         return jsonify([]), 200
+#     return jsonify(serialize_order(row)), 200
 
 
 @app.get("/<chainId>/all")
@@ -408,19 +408,19 @@ def get_all_orders(chainId: str):
     return jsonify(items)
 
 
-@app.get("/<chainId>/count")
-def get_count(chainId: str):
-    statuses = parse_statuses(request.args.get("statuses"))
-    takerAsset = request.args.get("takerAsset")
-    makerAsset = request.args.get("makerAsset")
-    if takerAsset:
-        validate_address(takerAsset, "takerAsset")
-    if makerAsset:
-        validate_address(makerAsset, "makerAsset")
+# @app.get("/<chainId>/count")
+# def get_count(chainId: str):
+#     statuses = parse_statuses(request.args.get("statuses"))
+#     takerAsset = request.args.get("takerAsset")
+#     makerAsset = request.args.get("makerAsset")
+#     if takerAsset:
+#         validate_address(takerAsset, "takerAsset")
+#     if makerAsset:
+#         validate_address(makerAsset, "makerAsset")
 
-    with get_db() as conn:
-        c = count_orders(conn, {"statuses": statuses, "takerAsset": takerAsset, "makerAsset": makerAsset})
-    return jsonify({"count": c})
+#     with get_db() as conn:
+#         c = count_orders(conn, {"statuses": statuses, "takerAsset": takerAsset, "makerAsset": makerAsset})
+#     return jsonify({"count": c})
 
 
 # -------------------------
