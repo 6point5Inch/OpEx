@@ -15,9 +15,9 @@ export default function Options() {
   );
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
   const [selectedUnderlyingAsset, setSelectedUnderlyingAsset] =
-    useState<string>("all");
+    useState<string>("1INCH");
   const [selectedExpiryPeriod, setSelectedExpiryPeriod] =
-    useState<string>("all");
+    useState<string>("7d");
 
   const {
     data,
@@ -79,10 +79,8 @@ export default function Options() {
       availableUnderlyingAssets.length > 0 ||
       availableExpiryPeriods.length > 0
     ) {
-      const underlyingAsset =
-        selectedUnderlyingAsset === "all" ? undefined : selectedUnderlyingAsset;
-      const expiryPeriod =
-        selectedExpiryPeriod === "all" ? undefined : selectedExpiryPeriod;
+      const underlyingAsset = selectedUnderlyingAsset;
+      const expiryPeriod = selectedExpiryPeriod;
       applyFilters(underlyingAsset, expiryPeriod);
     }
   }, [
@@ -161,7 +159,7 @@ export default function Options() {
 
       {/* Live Prices Display */}
       <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 h-[50px]">
           <TrendingUp className="h-5 w-5 text-green-600" />
           <span className="text-sm font-medium text-muted-foreground">
             Live Prices:
@@ -223,7 +221,6 @@ export default function Options() {
             onChange={(e) => handleUnderlyingAssetChange(e.target.value)}
             className="px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
           >
-            <option value="all">All Assets</option>
             {availableUnderlyingAssets.map((asset) => (
               <option key={asset} value={asset}>
                 {asset === "1INCH"
@@ -242,16 +239,6 @@ export default function Options() {
             Expiry:
           </label>
           <div className="flex space-x-2">
-            <button
-              onClick={() => handleExpiryPeriodChange("all")}
-              className={`px-3 py-1 text-xs rounded-md border transition-colors ${
-                selectedExpiryPeriod === "all"
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-foreground border-border hover:bg-muted"
-              }`}
-            >
-              All
-            </button>
             {availableExpiryPeriods.map((period) => (
               <button
                 key={period}
@@ -271,31 +258,18 @@ export default function Options() {
         {/* Selected Filters Display */}
         <div className="flex-1 text-right">
           <div className="text-xs text-muted-foreground">
-            {selectedUnderlyingAsset === "all" &&
-            selectedExpiryPeriod === "all" ? (
-              "Showing all options"
-            ) : (
-              <>
-                Filtered by:{" "}
-                {selectedUnderlyingAsset !== "all" && (
-                  <span className="font-medium">
-                    {selectedUnderlyingAsset === "1INCH"
-                      ? "1INCH/USDC"
-                      : selectedUnderlyingAsset === "ETH"
-                      ? "ETH/USDC"
-                      : `${selectedUnderlyingAsset}/USDC`}
-                  </span>
-                )}
-                {selectedUnderlyingAsset !== "all" &&
-                  selectedExpiryPeriod !== "all" &&
-                  " • "}
-                {selectedExpiryPeriod !== "all" && (
-                  <span className="font-medium">
-                    {selectedExpiryPeriod.toUpperCase()}
-                  </span>
-                )}
-              </>
-            )}
+            Filtered by:{" "}
+            <span className="font-medium">
+              {selectedUnderlyingAsset === "1INCH"
+                ? "1INCH/USDC"
+                : selectedUnderlyingAsset === "ETH"
+                ? "ETH/USDC"
+                : `${selectedUnderlyingAsset}/USDC`}
+            </span>
+            {" • "}
+            <span className="font-medium">
+              {selectedExpiryPeriod.toUpperCase()}
+            </span>
           </div>
         </div>
       </div>
@@ -306,6 +280,8 @@ export default function Options() {
         onOptionSelect={handleOptionSelect}
         onOptionDoubleClick={handleOptionDoubleClick}
         underlyingPrice={underlyingPrice}
+        livePrice={getPrice(selectedUnderlyingAsset) || underlyingPrice}
+        selectedAsset={selectedUnderlyingAsset}
         expirationDate={expirationDate}
         timeToExpiry={timeToExpiry}
       />

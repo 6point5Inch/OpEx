@@ -18,7 +18,7 @@ export interface UseLivePricesResult {
 
 export function useLivePrices(
   autoRefresh = true,
-  refreshInterval = 5000
+  refreshInterval = 500
 ): UseLivePricesResult {
   const [prices, setPrices] = useState<Record<string, LivePriceData>>({});
   const [isLoading, setIsLoading] = useState(true);
