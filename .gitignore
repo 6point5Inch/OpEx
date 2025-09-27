@@ -1,1 +1,10 @@
 api/
+.env
+venv/
+node_modules/
+twap/
+testing_typescript/
+lib/
+cache/
+broadcast/
+out/
