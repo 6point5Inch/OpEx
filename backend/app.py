@@ -296,116 +296,244 @@ def get_option_history():
     return jsonify([{k: convert_value(v) for k, v in row.items()} for row in rows])
 
 
-@app.post("/<chainId>/")
-def create_limit_order(chainId: str):
+@app.post("/api/orders")
+def create_order():
     body = request.get_json(silent=True) or {}
-    required = ["orderHash", "signature", "data"]
-    for f in required:
-        if f not in body:
-            return jsonify({"statusCode": 400, "message": f"Missing {f}", "error": "Bad Request"}), 400
-
-    data = body["data"]
-    for f in ["makerAsset", "takerAsset", "maker", "makingAmount", "takingAmount", "salt"]:
-        if f not in data:
-            return jsonify({"statusCode": 400, "message": f"Missing data.{f}", "error": "Bad Request"}), 400
-
-    # validate addresses
-    for addr_field in ("makerAsset", "takerAsset", "maker"):
-        validate_address(data[addr_field], addr_field)
-    receiver = data.get("receiver", "0x0000000000000000000000000000000000000000")
-    if receiver:
-        validate_address(receiver, "receiver")
-
+    required = ["orderHash", "maker", "makerAsset", "takerAsset", "makingAmount", "takingAmount", "salt", "makerTraits", "orderData"]
+    
+    # Validate required fields
+    for field in required:
+        if field not in body:
+            return jsonify({"statusCode": 400, "message": f"Missing {field}", "error": "Bad Request"}), 400
+    
+    # Validate addresses
+    for addr_field in ["maker", "makerAsset", "takerAsset"]:
+        validate_address(body[addr_field], addr_field)
+    
+    # Build order object
     order = {
-        "orderHash": body["orderHash"],
-        "signature": body["signature"],
-        "data_json": json.dumps(data),
-        "createdAt": now_iso(),
-        "remainingMakerAmount": data["makingAmount"],
-        "makerBalance": "0",
-        "makerAllowance": "0",
-        "makerRate": data.get("makerRate", "0"),
-        "takerRate": data.get("takerRate", "0"),
-        "isMakerContract": 0,
-        "orderInvalidReason_json": json.dumps(None),
-        "status": 1,
-        "makerAsset": data["makerAsset"],
-        "takerAsset": data["takerAsset"],
-        "maker": data["maker"],
-        "receiver": receiver,
-        "makingAmount": data["makingAmount"],
-        "takingAmount": data["takingAmount"],
+        "order_hash": body["orderHash"],
+        "maker": body["maker"],
+        "maker_asset": body["makerAsset"],
+        "taker_asset": body["takerAsset"],
+        "making_amount": body["makingAmount"],
+        "taking_amount": body["takingAmount"],
+        "salt": body["salt"],
+        "maker_traits": body["makerTraits"],
+        "order_data": body["orderData"],
+        "option_strike": body.get("optionStrike"),
+        "option_expiry": body.get("optionExpiry"),
+        "option_type": body.get("optionType"),
+        "option_premium": body.get("optionPremium"),
+        "signature_r": body.get("signatureR"),
+        "signature_vs": body.get("signatureVs"),
+        "extension_data": body.get("extensionData"),
+        "status": "open",
+        "valid_at": body.get("validAt")
     }
-
+    
     insert_sql = text("""
         INSERT INTO orders (
-            orderHash, signature, data_json, createdAt,
-            remainingMakerAmount, makerBalance, makerAllowance,
-            makerRate, takerRate, isMakerContract, orderInvalidReason_json,
-            status, makerAsset, takerAsset, maker, receiver, makingAmount, takingAmount
+            order_hash, maker, maker_asset, taker_asset, making_amount, taking_amount,
+            salt, maker_traits, order_data, option_strike, option_expiry, option_type,
+            option_premium, signature_r, signature_vs, extension_data, status, valid_at
         ) VALUES (
-            :orderHash, :signature, :data_json, :createdAt,
-            :remainingMakerAmount, :makerBalance, :makerAllowance,
-            :makerRate, :takerRate, :isMakerContract, :orderInvalidReason_json,
-            :status, :makerAsset, :takerAsset, :maker, :receiver, :makingAmount, :takingAmount
+            :order_hash, :maker, :maker_asset, :taker_asset, :making_amount, :taking_amount,
+            :salt, :maker_traits, :order_data, :option_strike, :option_expiry, :option_type,
+            :option_premium, :signature_r, :signature_vs, :extension_data, :status, :valid_at
         )
     """)
-
+    
     try:
         with get_db() as conn:
             conn.execute(insert_sql, order)
             conn.commit()
     except IntegrityError:
-        return jsonify({"statusCode": 400, "message": "Duplicate orderHash", "error": "Bad Request"}), 400
+        return jsonify({"statusCode": 400, "message": "Duplicate entry", "error": "Bad Request"}), 400
     except Exception as e:
-        # general DB error
         return jsonify({"statusCode": 500, "message": "DB error", "error": str(e)}), 500
-
+    
     return jsonify({"success": True}), 201
 
 
-@app.get("/<chainId>/address/<address>")
-def get_orders_by_address(chainId: str, address: str):
-    validate_address(address, "address")
-    page, limit = parse_pagination()
-    statuses = parse_statuses(request.args.get("statuses"))
-    sort_by = parse_sort_by()
-    takerAsset = request.args.get("takerAsset")
-    makerAsset = request.args.get("makerAsset")
-    if takerAsset:
-        validate_address(takerAsset, "takerAsset")
-    if makerAsset:
-        validate_address(makerAsset, "makerAsset")
+@app.get("/api/orders")
+def get_orders():
+    # Parse query parameters
+    status = request.args.get("status", "open")
+    maker = request.args.get("maker")
+    maker_asset = request.args.get("makerAsset")
+    taker_asset = request.args.get("takerAsset")
+    limit = min(int(request.args.get("limit", "50")), 100)
+    
+    # Validate addresses if provided
+    if maker:
+        validate_address(maker, "maker")
+    if maker_asset:
+        validate_address(maker_asset, "makerAsset")
+    if taker_asset:
+        validate_address(taker_asset, "takerAsset")
+    
+    # Build WHERE clause
+    where_clauses = ["status = :status"]
+    params = {"status": status, "limit": limit}
+    
+    if maker:
+        where_clauses.append("maker = :maker")
+        params["maker"] = maker
+    if maker_asset:
+        where_clauses.append("maker_asset = :maker_asset")
+        params["maker_asset"] = maker_asset
+    if taker_asset:
+        where_clauses.append("taker_asset = :taker_asset")
+        params["taker_asset"] = taker_asset
+    
+    where_clause = " AND ".join(where_clauses)
+    
+    sql = text(f"""
+        SELECT * FROM orders
+        WHERE {where_clause}
+        ORDER BY created_at DESC
+        LIMIT :limit
+    """)
+    
+    try:
+        with get_db() as conn:
+            rows = conn.execute(sql, params).mappings().all()
+            orders = []
+            for row in rows:
+                order = {k: convert_value(v) for k, v in row.items()}
+                orders.append(order)
+            return jsonify(orders)
+    except Exception as e:
+        return jsonify({"statusCode": 500, "message": "DB error", "error": str(e)}), 500
 
-    with get_db() as conn:
-        items = select_orders(conn, {"statuses": statuses, "takerAsset": takerAsset, "makerAsset": makerAsset, "address": address}, page, limit, sort_by)
-    return jsonify(items)
+
+@app.get("/api/orders/<orderHash>")
+def get_order_by_hash(orderHash: str):
+    sql = text("SELECT * FROM orders WHERE order_hash = :order_hash")
+    
+    try:
+        with get_db() as conn:
+            row = conn.execute(sql, {"order_hash": orderHash}).mappings().first()
+            if not row:
+                return jsonify({"statusCode": 404, "message": "Order not found", "error": "Not Found"}), 404
+            
+            order = {k: convert_value(v) for k, v in row.items()}
+            return jsonify(order)
+    except Exception as e:
+        return jsonify({"statusCode": 500, "message": "DB error", "error": str(e)}), 500
 
 
-# @app.get("/<chainId>/order/<orderHash>")
-# def get_order_by_hash(chainId: str, orderHash: str):
+# @app.post("/<chainId>/")
+# def create_limit_order(chainId: str):
+#     body = request.get_json(silent=True) or {}
+#     required = ["orderHash", "signature", "data"]
+#     for f in required:
+#         if f not in body:
+#             return jsonify({"statusCode": 400, "message": f"Missing {f}", "error": "Bad Request"}), 400
+
+#     data = body["data"]
+#     for f in ["makerAsset", "takerAsset", "maker", "makingAmount", "takingAmount", "salt"]:
+#         if f not in data:
+#             return jsonify({"statusCode": 400, "message": f"Missing data.{f}", "error": "Bad Request"}), 400
+
+#     # validate addresses
+#     for addr_field in ("makerAsset", "takerAsset", "maker"):
+#         validate_address(data[addr_field], addr_field)
+#     receiver = data.get("receiver", "0x0000000000000000000000000000000000000000")
+#     if receiver:
+#         validate_address(receiver, "receiver")
+
+#     order = {
+#         "orderHash": body["orderHash"],
+#         "signature": body["signature"],
+#         "data_json": json.dumps(data),
+#         "createdAt": now_iso(),
+#         "remainingMakerAmount": data["makingAmount"],
+#         "makerBalance": "0",
+#         "makerAllowance": "0",
+#         "makerRate": data.get("makerRate", "0"),
+#         "takerRate": data.get("takerRate", "0"),
+#         "isMakerContract": 0,
+#         "orderInvalidReason_json": json.dumps(None),
+#         "status": 1,
+#         "makerAsset": data["makerAsset"],
+#         "takerAsset": data["takerAsset"],
+#         "maker": data["maker"],
+#         "receiver": receiver,
+#         "makingAmount": data["makingAmount"],
+#         "takingAmount": data["takingAmount"],
+#     }
+
+#     insert_sql = text("""
+#         INSERT INTO orders (
+#             orderHash, signature, data_json, createdAt,
+#             remainingMakerAmount, makerBalance, makerAllowance,
+#             makerRate, takerRate, isMakerContract, orderInvalidReason_json,
+#             status, makerAsset, takerAsset, maker, receiver, makingAmount, takingAmount
+#         ) VALUES (
+#             :orderHash, :signature, :data_json, :createdAt,
+#             :remainingMakerAmount, :makerBalance, :makerAllowance,
+#             :makerRate, :takerRate, :isMakerContract, :orderInvalidReason_json,
+#             :status, :makerAsset, :takerAsset, :maker, :receiver, :makingAmount, :takingAmount
+#         )
+#     """)
+
+#     try:
+#         with get_db() as conn:
+#             conn.execute(insert_sql, order)
+#             conn.commit()
+#     except IntegrityError:
+#         return jsonify({"statusCode": 400, "message": "Duplicate orderHash", "error": "Bad Request"}), 400
+#     except Exception as e:
+#         # general DB error
+#         return jsonify({"statusCode": 500, "message": "DB error", "error": str(e)}), 500
+
+#     return jsonify({"success": True}), 201
+
+
+# @app.get("/<chainId>/address/<address>")
+# def get_orders_by_address(chainId: str, address: str):
+#     validate_address(address, "address")
+#     page, limit = parse_pagination()
+#     statuses = parse_statuses(request.args.get("statuses"))
+#     sort_by = parse_sort_by()
+#     takerAsset = request.args.get("takerAsset")
+#     makerAsset = request.args.get("makerAsset")
+#     if takerAsset:
+#         validate_address(takerAsset, "takerAsset")
+#     if makerAsset:
+#         validate_address(makerAsset, "makerAsset")
+
 #     with get_db() as conn:
-#         row = conn.execute(text("SELECT * FROM orders WHERE orderHash = :h"), {"h": orderHash}).mappings().first()
-#     if not row:
-#         return jsonify([]), 200
-#     return jsonify(serialize_order(row)), 200
+#         items = select_orders(conn, {"statuses": statuses, "takerAsset": takerAsset, "makerAsset": makerAsset, "address": address}, page, limit, sort_by)
+#     return jsonify(items)
 
 
-@app.get("/<chainId>/all")
-def get_all_orders(chainId: str):
-    page, limit = parse_pagination()
-    statuses = parse_statuses(request.args.get("statuses"))
-    sort_by = parse_sort_by()
-    takerAsset = request.args.get("takerAsset")
-    makerAsset = request.args.get("makerAsset")
-    if takerAsset:
-        validate_address(takerAsset, "takerAsset")
-    if makerAsset:
-        validate_address(makerAsset, "makerAsset")
+# # @app.get("/<chainId>/order/<orderHash>")
+# # def get_order_by_hash(chainId: str, orderHash: str):
+# #     with get_db() as conn:
+# #         row = conn.execute(text("SELECT * FROM orders WHERE orderHash = :h"), {"h": orderHash}).mappings().first()
+# #     if not row:
+# #         return jsonify([]), 200
+# #     return jsonify(serialize_order(row)), 200
 
-    with get_db() as conn:
-        items = select_orders(conn, {"statuses": statuses, "takerAsset": takerAsset, "makerAsset": makerAsset}, page, limit, sort_by)
-    return jsonify(items)
+
+# @app.get("/<chainId>/all")
+# def get_all_orders(chainId: str):
+#     page, limit = parse_pagination()
+#     statuses = parse_statuses(request.args.get("statuses"))
+#     sort_by = parse_sort_by()
+#     takerAsset = request.args.get("takerAsset")
+#     makerAsset = request.args.get("makerAsset")
+#     if takerAsset:
+#         validate_address(takerAsset, "takerAsset")
+#     if makerAsset:
+#         validate_address(makerAsset, "makerAsset")
+
+#     with get_db() as conn:
+#         items = select_orders(conn, {"statuses": statuses, "takerAsset": takerAsset, "makerAsset": makerAsset}, page, limit, sort_by)
+#     return jsonify(items)
 
 
 # @app.get("/<chainId>/count")

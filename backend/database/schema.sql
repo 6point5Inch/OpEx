@@ -43,27 +43,51 @@ CREATE TABLE public.crypto_options (
 
 -- Orders table
 CREATE TABLE IF NOT EXISTS orders (
-  orderHash TEXT PRIMARY KEY,
-  signature TEXT NOT NULL,
-  data_json TEXT NOT NULL,
-  createdAt TEXT NOT NULL,
-  remainingMakerAmount TEXT NOT NULL,
-  makerBalance TEXT NOT NULL,
-  makerAllowance TEXT NOT NULL,
-  makerRate TEXT NOT NULL,
-  takerRate TEXT NOT NULL,
-  isMakerContract INTEGER NOT NULL,
-  orderInvalidReason_json TEXT,
-  status INTEGER NOT NULL,
-  makerAsset TEXT NOT NULL,
-  takerAsset TEXT NOT NULL,
-  maker TEXT NOT NULL,
-  receiver TEXT NOT NULL,
-  makingAmount TEXT NOT NULL,
-  takingAmount TEXT NOT NULL
-);
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_hash TEXT UNIQUE NOT NULL,
+        maker TEXT NOT NULL,
+        maker_asset TEXT NOT NULL,
+        taker_asset TEXT NOT NULL,
+        making_amount TEXT NOT NULL,
+        taking_amount TEXT NOT NULL,
+        salt TEXT NOT NULL,
+        maker_traits TEXT NOT NULL,
+        order_data TEXT NOT NULL,
+        option_strike NUMERIC(18,8),
+        option_expiry BIGINT,
+        option_type VARCHAR(4),
+        option_premium NUMERIC(18,8),
+        signature_r TEXT,
+        signature_vs TEXT,
+        extension_data TEXT,
+        status TEXT DEFAULT 'open',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        valid_at DATETIME,
+      );
 
-CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_assets ON orders(makerAsset, takerAsset);
-CREATE INDEX IF NOT EXISTS idx_orders_maker ON orders(maker);
-CREATE INDEX IF NOT EXISTS idx_orders_create ON orders(createdAt);
+-- CREATE TABLE IF NOT EXISTS orders (
+--   orderHash TEXT PRIMARY KEY,
+--   signature TEXT NOT NULL,
+--   data_json TEXT NOT NULL,
+--   createdAt TEXT NOT NULL,
+--   remainingMakerAmount TEXT NOT NULL,
+--   makerBalance TEXT NOT NULL,
+--   makerAllowance TEXT NOT NULL,
+--   makerRate TEXT NOT NULL,
+--   takerRate TEXT NOT NULL,
+--   isMakerContract INTEGER NOT NULL,
+--   orderInvalidReason_json TEXT,
+--   status INTEGER NOT NULL,
+--   makerAsset TEXT NOT NULL,
+--   takerAsset TEXT NOT NULL,
+--   maker TEXT NOT NULL,
+--   receiver TEXT NOT NULL,
+--   makingAmount TEXT NOT NULL,
+--   takingAmount TEXT NOT NULL
+-- );
+
+-- CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+-- CREATE INDEX IF NOT EXISTS idx_orders_assets ON orders(makerAsset, takerAsset);
+-- CREATE INDEX IF NOT EXISTS idx_orders_maker ON orders(maker);
+-- CREATE INDEX IF NOT EXISTS idx_orders_create ON orders(createdAt);
