@@ -107,8 +107,8 @@ export function processHistoryDataForChart(
 ): ChartDataPoint[] {
   if (historyData.length === 0) return [];
 
-  // Group by time intervals (e.g., every 5 minutes)
-  const timeInterval = 5 * 60 * 1000; // 5 minutes in milliseconds
+  // Group by time intervals (every 10 seconds)
+  const timeInterval = 10 * 1000; // 10 seconds in milliseconds
   const groupedData = new Map<number, number[]>();
 
   historyData.forEach((item) => {
@@ -151,6 +151,13 @@ export function processHistoryDataForChart(
   });
 
   return chartData.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+// Helper function to get the current 10-second interval start time
+export function getCurrentCandleInterval(timestamp: Date | string): number {
+  const timeInterval = 10 * 1000; // 10 seconds in milliseconds
+  const time = new Date(timestamp).getTime();
+  return Math.floor(time / timeInterval) * timeInterval;
 }
 
 // Convert ProcessedOptionData to the legacy OptionsData format for compatibility

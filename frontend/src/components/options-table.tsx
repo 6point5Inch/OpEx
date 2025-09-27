@@ -228,15 +228,6 @@ export function OptionsTable({
               <TableRow>
                 {/* Call Options Headers */}
                 <TableHead className="text-center text-green-600 dark:text-green-400">
-                  Δ
-                </TableHead>
-                <TableHead className="text-center text-green-600 dark:text-green-400">
-                  Size
-                </TableHead>
-                <TableHead className="text-center text-green-600 dark:text-green-400">
-                  IV Bid
-                </TableHead>
-                <TableHead className="text-center text-green-600 dark:text-green-400">
                   Bid
                 </TableHead>
                 <TableHead className="text-center text-green-600 dark:text-green-400">
@@ -244,15 +235,6 @@ export function OptionsTable({
                 </TableHead>
                 <TableHead className="text-center text-green-600 dark:text-green-400">
                   Ask
-                </TableHead>
-                <TableHead className="text-center text-green-600 dark:text-green-400">
-                  IV Ask
-                </TableHead>
-                <TableHead className="text-center text-green-600 dark:text-green-400">
-                  Size
-                </TableHead>
-                <TableHead className="text-center text-green-600 dark:text-green-400">
-                  Pos
                 </TableHead>
 
                 {/* Strike Price */}
@@ -262,15 +244,6 @@ export function OptionsTable({
 
                 {/* Put Options Headers */}
                 <TableHead className="text-center text-red-600 dark:text-red-400">
-                  Pos
-                </TableHead>
-                <TableHead className="text-center text-red-600 dark:text-red-400">
-                  Size
-                </TableHead>
-                <TableHead className="text-center text-red-600 dark:text-red-400">
-                  IV Bid
-                </TableHead>
-                <TableHead className="text-center text-red-600 dark:text-red-400">
                   Bid
                 </TableHead>
                 <TableHead className="text-center text-red-600 dark:text-red-400">
@@ -278,15 +251,6 @@ export function OptionsTable({
                 </TableHead>
                 <TableHead className="text-center text-red-600 dark:text-red-400">
                   Ask
-                </TableHead>
-                <TableHead className="text-center text-red-600 dark:text-red-400">
-                  IV Ask
-                </TableHead>
-                <TableHead className="text-center text-red-600 dark:text-red-400">
-                  Size
-                </TableHead>
-                <TableHead className="text-center text-red-600 dark:text-red-400">
-                  Δ
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -299,48 +263,6 @@ export function OptionsTable({
                   className="hover:bg-transparent"
                 >
                   {/* Call Options Cells */}
-                  <TableCell
-                    className={getEnhancedCellClassName(
-                      row.strikePrice,
-                      "call"
-                    )}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "call", row.calls)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "call", row.calls)
-                    }
-                  >
-                    {formatNumber(row.calls.delta)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(
-                      row.strikePrice,
-                      "call"
-                    )}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "call", row.calls)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "call", row.calls)
-                    }
-                  >
-                    {formatNumber(row.calls.size)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(
-                      row.strikePrice,
-                      "call"
-                    )}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "call", row.calls)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "call", row.calls)
-                    }
-                  >
-                    {formatPercentage(row.calls.ivBid)}
-                  </TableCell>
                   <TableCell
                     className={getEnhancedCellClassName(
                       row.strikePrice,
@@ -384,48 +306,6 @@ export function OptionsTable({
                     }
                   >
                     {formatNumber(row.calls.ask)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(
-                      row.strikePrice,
-                      "call"
-                    )}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "call", row.calls)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "call", row.calls)
-                    }
-                  >
-                    {formatPercentage(row.calls.ivAsk)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(
-                      row.strikePrice,
-                      "call"
-                    )}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "call", row.calls)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "call", row.calls)
-                    }
-                  >
-                    {formatNumber(row.calls.size2)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(
-                      row.strikePrice,
-                      "call"
-                    )}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "call", row.calls)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "call", row.calls)
-                    }
-                  >
-                    {formatNumber(row.calls.position)}
                   </TableCell>
 
                   {/* Strike Price Column */}
@@ -482,39 +362,6 @@ export function OptionsTable({
                       handleCellDoubleClick(row.strikePrice, "put", row.puts)
                     }
                   >
-                    {formatNumber(row.puts.position)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(row.strikePrice, "put")}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "put", row.puts)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "put", row.puts)
-                    }
-                  >
-                    {formatNumber(row.puts.size)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(row.strikePrice, "put")}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "put", row.puts)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "put", row.puts)
-                    }
-                  >
-                    {formatPercentage(row.puts.ivBid)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(row.strikePrice, "put")}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "put", row.puts)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "put", row.puts)
-                    }
-                  >
                     {formatNumber(row.puts.bid)}
                   </TableCell>
                   <TableCell
@@ -540,39 +387,6 @@ export function OptionsTable({
                     }
                   >
                     {formatNumber(row.puts.ask)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(row.strikePrice, "put")}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "put", row.puts)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "put", row.puts)
-                    }
-                  >
-                    {formatPercentage(row.puts.ivAsk)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(row.strikePrice, "put")}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "put", row.puts)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "put", row.puts)
-                    }
-                  >
-                    {formatNumber(row.puts.size2)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(row.strikePrice, "put")}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "put", row.puts)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "put", row.puts)
-                    }
-                  >
-                    {formatNumber(row.puts.delta)}
                   </TableCell>
                 </TableRow>
               ))}

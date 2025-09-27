@@ -28,11 +28,23 @@ const getChartOptions = (isDark: boolean = false) => ({
   backgroundColor: "transparent",
   hAxis: {
     textStyle: { color: isDark ? "#9ca3af" : "#666" },
-    gridlines: { color: isDark ? "#374151" : "#e5e7eb" },
+    gridlines: {
+      color: isDark ? "#374151" : "#e5e7eb",
+      count: -1,
+    },
+    minorGridlines: {
+      color: isDark ? "#1f2937" : "#f3f4f6",
+    },
   },
   vAxis: {
     textStyle: { color: isDark ? "#9ca3af" : "#666" },
-    gridlines: { color: isDark ? "#374151" : "#e5e7eb" },
+    gridlines: {
+      color: isDark ? "#374151" : "#e5e7eb",
+      count: 8,
+    },
+    minorGridlines: {
+      color: isDark ? "#1f2937" : "#f3f4f6",
+    },
   },
 });
 
@@ -192,11 +204,11 @@ const TradeModalContent = ({
               {selectedOption.type.toUpperCase()}
             </Badge>
             <span className="text-lg font-semibold">
-              ${formatNumber(selectedOption.strikePrice, 0)}
+              ${formatNumber(selectedOption.strikePrice, 8)}
             </span>
           </div>
           <div className="text-sm text-gray-400">
-            ETH_USDC-27SEP25 • Expiry: 27 Sept 2025
+            {selectedOption.data.instrumentName}
           </div>
         </div>
 
@@ -223,36 +235,6 @@ const TradeModalContent = ({
                 <span className="text-gray-400">Ask:</span>
                 <span className="text-red-400">
                   ${formatNumber(selectedOption.data.ask, 6)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Delta:</span>
-                <span className="text-white">
-                  {formatNumber(selectedOption.data.delta, 3)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">IV Bid:</span>
-                <span className="text-white">
-                  {formatPercentage(selectedOption.data.ivBid)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">IV Ask:</span>
-                <span className="text-white">
-                  {formatPercentage(selectedOption.data.ivAsk)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Volume:</span>
-                <span className="text-white">
-                  {formatNumber(selectedOption.data.volume)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Open Interest:</span>
-                <span className="text-white">
-                  {formatNumber(selectedOption.data.openInterest)}
                 </span>
               </div>
               {selectedOption.instrumentName && (
