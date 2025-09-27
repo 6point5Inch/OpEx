@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { OptionsTable } from "@/components/options-table";
-import { TradeModal } from "@/components/trade-modal";
 import { useRealTimeOptionsData } from "@/hooks/useRealTimeOptionsData";
 import { useLivePrices } from "@/hooks/useLivePrices";
 import { SelectedOption } from "@/types/options";
 import { Button } from "@/components/ui/button";
+import { OptionChart } from "@/components/option-chart";
+import { TradePanel } from "@/components/trade-panel";
 import {
   RefreshCw,
   AlertCircle,
@@ -19,7 +20,6 @@ export default function Options() {
   const [selectedOption, setSelectedOption] = useState<SelectedOption | null>(
     null
   );
-  const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
   const [selectedUnderlyingAsset, setSelectedUnderlyingAsset] =
     useState<string>("1INCH");
   const [selectedExpiryPeriod, setSelectedExpiryPeriod] =
@@ -51,15 +51,6 @@ export default function Options() {
 
   const handleOptionSelect = (option: SelectedOption) => {
     setSelectedOption(option);
-  };
-
-  const handleOptionDoubleClick = (option: SelectedOption) => {
-    setSelectedOption(option);
-    setIsTradeModalOpen(true);
-  };
-
-  const handleCloseTradeModal = () => {
-    setIsTradeModalOpen(false);
   };
 
   const handleRefresh = () => {
@@ -132,7 +123,7 @@ export default function Options() {
   }
 
   return (
-    <div className="container mx-auto px-6 py-2 space-y-2 h-[100vh-200px] overflow-hidden">
+    <div className="px-4 py-2 space-y-4 h-screen flex flex-col">
       <div className="flex flex-col space-y-2">
         <div className="flex items-center justify-between">
           <div>
@@ -140,8 +131,7 @@ export default function Options() {
               Options Trading
             </h1>
             <p className="text-muted-foreground">
-              Select an option to view details or double-click to open the trade
-              modal.
+              Select an option to view details and trade.
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -278,63 +268,27 @@ export default function Options() {
         </div>
       </div>
 
-      <OptionsTable
-        data={data}
-        selectedOption={selectedOption}
-        onOptionSelect={handleOptionSelect}
-        onOptionDoubleClick={handleOptionDoubleClick}
-        underlyingPrice={underlyingPrice}
-        livePrice={getPrice(selectedUnderlyingAsset) || underlyingPrice}
-        selectedAsset={selectedUnderlyingAsset}
-        expirationDate={expirationDate}
-        timeToExpiry={timeToExpiry}
-      />
-
-      <TradeModal
-        isOpen={isTradeModalOpen}
-        onClose={handleCloseTradeModal}
-        selectedOption={selectedOption}
-      />
-
-      {selectedOption && (
-        <div className="mt-6 p-4 bg-muted/20 rounded-lg border">
-          <h3 className="font-semibold mb-2">Selected Option Details</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Type:</span>
-              <span className="ml-2 font-medium capitalize">
-                {selectedOption.type}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Strike:</span>
-              <span className="ml-2 font-medium">
-                ${selectedOption.strikePrice}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Mark:</span>
-              <span className="ml-2 font-medium">
-                ${formatValue(selectedOption.data.mark)}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Delta:</span>
-              <span className="ml-2 font-medium">
-                {formatValue(selectedOption.data.delta)}
-              </span>
-            </div>
-            {selectedOption.instrumentName && (
-              <div className="col-span-2 md:col-span-4">
-                <span className="text-muted-foreground">Instrument:</span>
-                <span className="ml-2 font-medium font-mono text-xs">
-                  {selectedOption.instrumentName}
-                </span>
-              </div>
-            )}
+      <main className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="">
+          <OptionsTable
+            data={data}
+            selectedOption={selectedOption}
+            onOptionSelect={handleOptionSelect}
+            underlyingPrice={underlyingPrice}
+            livePrice={getPrice(selectedUnderlyingAsset) || underlyingPrice}
+          />
+        </div>
+        <div className="flex flex-col gap-4">
+          <div className="flex-1">
+            <OptionChart
+              instrumentName={selectedOption?.instrumentName || null}
+            />
+          </div>
+          <div className="flex-1">
+            <TradePanel selectedOption={selectedOption} />
           </div>
         </div>
-      )}
+      </main>
     </div>
   );
 }

@@ -83,6 +83,7 @@ export function useRealTimeChartData(): UseRealTimeChartDataReturn {
 
   // Handle real-time updates from WebSocket
   const handleRealtimeUpdate = useCallback((update: OptionUpdate) => {
+    console.log(update);
     if (update.instrument !== currentInstrumentRef.current) {
       return; // Ignore updates for different instruments
     }
