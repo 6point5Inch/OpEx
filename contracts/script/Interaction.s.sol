@@ -254,9 +254,9 @@ contract ExerciseScript is Script {
         address maker = vm.addr(makerKey);
         address buyer = vm.addr(buyerKey);
 
-        TestERC20 underlying = TestERC20(vm.envAddress("UNDERLYING_TOKEN"));
-        TestERC20 quote = TestERC20(vm.envAddress("QUOTE_TOKEN"));
-        OptionNFT nft = OptionNFT(vm.envAddress("NFT_TOKEN"));
+        TestERC20 underlying = TestERC20(vm.envAddress("UNDERLYING_ADDRESS"));
+        TestERC20 quote = TestERC20(vm.envAddress("QUOTE_ADDRESS"));
+        OptionNFT nft = OptionNFT(vm.envAddress("OPTION_NFT_ADDRESS"));
         OptionEngine engine = OptionEngine(vm.envAddress("ENGINE_CONTRACT"));
         OptionHook hook = OptionHook(vm.envAddress("HOOK_CONTRACT"));
         LimitOrderProtocol limitOrderProtocol = LimitOrderProtocol(payable(vm.envAddress("LIMIT_ORDER_PROTOCOL")));
@@ -286,6 +286,76 @@ contract ExerciseScript is Script {
         console.log("Expected underlying amount:", size);
         require(buyerUnderlyingBalance >= size, "Buyer should have received underlying asset after exercise");
         console.log(" Buyer successfully received underlying asset after exercise!");
+        vm.stopBroadcast();
+    }
+}
+
+
+contract CheckNFTTransfer is Script {
+    function run() external {
+        // Local Anvil keys
+        uint256 makerKey = vm.envUint("MAKER_KEY");
+        uint256 nftHolderKey = vm.envUint("BUYER_KEY");
+        uint256 recipientKey = vm.envUint("THIRD_KEY");
+
+        vm.startBroadcast(nftHolderKey);
+
+        address maker = vm.addr(makerKey);
+        address nftHolder = vm.addr(nftHolderKey);
+        address recipient = vm.addr(recipientKey);
+
+        // Mint quote premium to recipient to pay for nft
+        TestERC20 quote = TestERC20(vm.envAddress("QUOTE_ADDRESS"));
+        uint256 amountToGive = 10 * (10 ** 6);
+        quote.mint(recipient, amountToGive);
+
+        OptionNFT nft = OptionNFT(vm.envAddress("OPTION_NFT_ADDRESS")); 
+        LimitOrderProtocol limitOrderProtocol = LimitOrderProtocol(payable(vm.envAddress("LIMIT_ORDER_PROTOCOL"))); // replace with actual deployed address
+
+        uint256 optionId = 1; // The ID of the option NFT to check
+
+        address currentOwner = nft.ownerOf(optionId);
+        vm.stopBroadcast();
+        console.log("Current NFT owner:", currentOwner);
+        console.log("Expected NFT holder:", recipient);
+        require(currentOwner == nftHolder, "NFT holder does not own the NFT");
+        console.log(" NFT holder correctly owns the NFT!");
+
+        // Transfer the NFT to another address using lop
+        vm.startBroadcast(nftHolderKey);
+        nft.approve(address(limitOrderProtocol), optionId);
+        vm.stopBroadcast();
+
+        // Build a simple order to transfer the NFT for a small amount of quote token
+        uint256 price = 1 * (10 ** 6); // 1 quote token
+        vm.startBroadcast(recipientKey);
+        quote.approve(address(limitOrderProtocol), price);
+        vm.stopBroadcast();
+        vm.startBroadcast(recipientKey);
+        IOrderMixin.Order memory order = IOrderMixin.Order({
+            salt: block.timestamp,
+            maker: Address.wrap(uint256(uint160(nftHolder))),
+            receiver: Address.wrap(uint256(uint160(recipient))),
+            makerAsset: Address.wrap(uint256(uint160(address(nft)))),
+            takerAsset: Address.wrap(uint256(uint160(address(quote)))),
+            makingAmount: 1, // 1 NFT
+            takingAmount: price,
+            makerTraits: MakerTraits.wrap(1 << 255) // Allow NFT transfer
+        });
+        bytes32 orderHash = limitOrderProtocol.hashOrder(order);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(nftHolderKey, orderHash);
+        bytes32 vs = bytes32(uint256(s) | (uint256(v - 27) << 255));
+        TakerTraits takerTraits = TakerTraits.wrap(1 << 255 | 1 << 251); // Allow NFT purchase
+        bytes memory args = abi.encodePacked(address(recipient), bytes("")); // No extension
+        (uint256 makingAmount, uint256 takingAmount, bytes32 finalOrderHash) =
+            limitOrderProtocol.fillOrderArgs(order, r, vs, price, takerTraits, args);
+        console.log("Order hash for NFT transfer:");
+        console.logBytes32(finalOrderHash);
+
+        // Check final nft owner
+        address newOwner = nft.ownerOf(optionId);
+        require(newOwner == recipient, "Recipient should own the NFT after transfer");
+        console.log(" NFT successfully transferred to recipient!");
         vm.stopBroadcast();
     }
 }
