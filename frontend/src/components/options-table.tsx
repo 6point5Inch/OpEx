@@ -118,7 +118,7 @@ export function OptionsTable({
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="text-xl font-bold">
-            Options Chain - ETH/USDC
+            Options Chain - ETH/1Inch
           </CardTitle>
           <div className="flex gap-4 text-sm text-muted-foreground">
             <span>Expiry: {expirationDate}</span>

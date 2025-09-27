@@ -17,32 +17,18 @@ import { ArrowUpDown, ChevronDown, Info, RotateCcw } from "lucide-react";
 
 // Token configurations
 const tokens = {
-  SOL: {
-    symbol: "SOL",
-    name: "Solana",
+  "1inch": {
+    symbol: "1inch",
+    name: "1inch",
     icon: "◎",
-    price: 195.56,
+    price: 11.56,
     change: "-3.29%",
-  },
-  USDC: {
-    symbol: "USDC",
-    name: "USD Coin",
-    icon: "$",
-    price: 0.99968,
-    change: "0%",
-  },
-  pyUSD: {
-    symbol: "pyUSD",
-    name: "PayPal USD",
-    icon: "P",
-    price: 1.0001,
-    change: "0.00%",
   },
   ETH: {
     symbol: "ETH",
     name: "Ethereum",
     icon: "Ξ",
-    price: 2645.32,
+    price: 3845.32,
     change: "-2.1%",
   },
 };
@@ -143,18 +129,16 @@ function TokenSelector({
 }
 
 function MarketOrderForm() {
-  const [sellingToken, setSellingToken] = useState("SOL");
-  const [buyingToken, setBuyingToken] = useState("USDC");
+  const [sellingToken, setSellingToken] = useState("1inch");
+  const [buyingToken, setBuyingToken] = useState("ETH");
   const [sellingAmount, setSellingAmount] = useState("0.629200147");
   const [buyingAmount, setBuyingAmount] = useState("122.860788");
 
   const handleSwap = () => {
-    // Swap tokens
     const tempToken = sellingToken;
     setSellingToken(buyingToken);
     setBuyingToken(tempToken);
 
-    // Swap amounts
     const tempAmount = sellingAmount;
     setSellingAmount(buyingAmount);
     setBuyingAmount(tempAmount);
@@ -216,7 +200,7 @@ function MarketOrderForm() {
 
       {/* Submit Button */}
       <Button className="w-full h-12 bg-lime-600 hover:bg-lime-500 text-black font-medium">
-        Insufficient SOL
+        Insufficient Token
       </Button>
 
       {/* Rate Info */}
@@ -232,7 +216,7 @@ function MarketOrderForm() {
 }
 
 function TriggerOrderForm() {
-  const [sellingToken, setSellingToken] = useState("USDC");
+  const [sellingToken, setSellingToken] = useState("1inch");
   const [buyingToken, setBuyingToken] = useState("ETH");
   const [sellingAmount, setSellingAmount] = useState("5");
   const [buyingAmount, setBuyingAmount] = useState("0.02547617");
@@ -299,7 +283,7 @@ function TriggerOrderForm() {
             />
             <div className="flex items-center justify-between mt-2">
               <span className="text-xs text-stone-500">Use Market</span>
-              <span className="text-xs text-stone-400">USDC</span>
+              <span className="text-xs text-stone-400">1inch</span>
             </div>
             <div className="text-xs text-stone-500">≈ ${buyRate}</div>
           </div>
@@ -345,7 +329,7 @@ function TriggerOrderForm() {
 
       {/* Submit Button */}
       <Button className="w-full h-12 bg-stone-600 hover:bg-stone-500 text-white font-medium">
-        Insufficient USDC
+        Insufficient Token
       </Button>
 
       {/* Ultra Mode Info */}
@@ -400,7 +384,7 @@ function TriggerOrderForm() {
 }
 
 function RecurringOrderForm() {
-  const [allocateToken, setAllocateToken] = useState("USDC");
+  const [allocateToken, setAllocateToken] = useState("1inch");
   const [buyToken, setBuyToken] = useState("ETH");
   const [allocateAmount, setAllocateAmount] = useState("120");
   const [frequency, setFrequency] = useState("1");
@@ -521,7 +505,9 @@ function RecurringOrderForm() {
             </span>
             <Info className="h-3 w-3 text-stone-500" />
           </div>
-          <span className="text-xs text-stone-500">Rate: 196.3 USDC / ETH</span>
+          <span className="text-xs text-stone-500">
+            Rate: 196.3 1inch / ETH
+          </span>
         </div>
         <div className="flex items-center space-x-4">
           <Input
