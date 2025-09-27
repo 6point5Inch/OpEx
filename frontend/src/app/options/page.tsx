@@ -132,7 +132,7 @@ export default function Options() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto px-6 py-2 space-y-2 h-[100vh-200px] overflow-hidden">
       <div className="flex flex-col space-y-2">
         <div className="flex items-center justify-between">
           <div>
@@ -180,119 +180,100 @@ export default function Options() {
         )}
       </div>
 
-      {/* Live Prices Display */}
-      <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border">
-        <div className="flex items-center space-x-2 h-[50px]">
-          <TrendingUp className="h-5 w-5 text-green-600" />
-          <span className="text-sm font-medium text-muted-foreground">
-            Live Prices:
-          </span>
-        </div>
-
-        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-6">
-          {/* ETH Price */}
+      {/* Combined Header: Live Prices & Filters */}
+      <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:justify-between md:items-center p-4 bg-muted/20 rounded-lg border">
+        {/* Left side: Filters */}
+        <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:items-center md:space-x-6">
+          {/* Underlying Asset Dropdown */}
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">ETH:</span>
-            {pricesLoading ? (
-              <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : pricesError ? (
-              <span className="text-red-500 text-sm">Error</span>
-            ) : (
-              <span className="text-lg font-bold text-green-600">
-                ${getPrice("ETH")?.toFixed(2) || "N/A"}
-              </span>
-            )}
+            <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              Asset:
+            </label>
+            <select
+              value={selectedUnderlyingAsset}
+              onChange={(e) => handleUnderlyingAssetChange(e.target.value)}
+              className="px-3 py-1.5 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+            >
+              {availableUnderlyingAssets.map((asset) => (
+                <option key={asset} value={asset}>
+                  {asset === "1INCH"
+                    ? "1INCH/USDC"
+                    : asset === "ETH"
+                    ? "ETH/USDC"
+                    : `${asset}/USDC`}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* 1INCH Price */}
+          {/* Expiry Period Buttons */}
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">1INCH:</span>
-            {pricesLoading ? (
-              <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : pricesError ? (
-              <span className="text-red-500 text-sm">Error</span>
-            ) : (
-              <span className="text-lg font-bold text-blue-600">
-                ${getPrice("1INCH")?.toFixed(4) || "N/A"}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Last Updated */}
-        <div className="flex-1 text-right">
-          {pricesLastUpdated && (
-            <div className="text-xs text-muted-foreground">
-              Updated: {new Date(pricesLastUpdated).toLocaleTimeString()}
+            <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              Expiry:
+            </label>
+            <div className="flex space-x-2">
+              {availableExpiryPeriods.map((period) => (
+                <button
+                  key={period}
+                  onClick={() => handleExpiryPeriodChange(period)}
+                  className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                    selectedExpiryPeriod === period
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-foreground border-border hover:bg-muted"
+                  }`}
+                >
+                  {period.toUpperCase()}
+                </button>
+              ))}
             </div>
-          )}
-          {pricesError && (
-            <div className="text-xs text-red-500">Price fetch failed</div>
-          )}
-        </div>
-      </div>
-
-      {/* Filter Controls */}
-      <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-6 md:items-center p-4 bg-muted/20 rounded-lg border">
-        {/* Underlying Asset Dropdown */}
-        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
-          <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-            Options Chain:
-          </label>
-          <select
-            value={selectedUnderlyingAsset}
-            onChange={(e) => handleUnderlyingAssetChange(e.target.value)}
-            className="px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-          >
-            {availableUnderlyingAssets.map((asset) => (
-              <option key={asset} value={asset}>
-                {asset === "1INCH"
-                  ? "1INCH/USDC"
-                  : asset === "ETH"
-                  ? "ETH/USDC"
-                  : `${asset}/USDC`}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Expiry Period Buttons */}
-        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
-          <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-            Expiry:
-          </label>
-          <div className="flex space-x-2">
-            {availableExpiryPeriods.map((period) => (
-              <button
-                key={period}
-                onClick={() => handleExpiryPeriodChange(period)}
-                className={`px-3 py-1 text-xs rounded-md border transition-colors ${
-                  selectedExpiryPeriod === period
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-foreground border-border hover:bg-muted"
-                }`}
-              >
-                {period.toUpperCase()}
-              </button>
-            ))}
           </div>
         </div>
 
-        {/* Selected Filters Display */}
-        <div className="flex-1 text-right">
-          <div className="text-xs text-muted-foreground">
-            Filtered by:{" "}
-            <span className="font-medium">
-              {selectedUnderlyingAsset === "1INCH"
-                ? "1INCH/USDC"
-                : selectedUnderlyingAsset === "ETH"
-                ? "ETH/USDC"
-                : `${selectedUnderlyingAsset}/USDC`}
-            </span>
-            {" • "}
-            <span className="font-medium">
-              {selectedExpiryPeriod.toUpperCase()}
-            </span>
+        {/* Right side: Live Prices */}
+        <div className="flex flex-col items-start md:items-end space-y-2">
+          <div className="flex items-center space-x-4">
+            {/* ETH Price */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                ETH:
+              </span>
+              {pricesLoading ? (
+                <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : pricesError ? (
+                <span className="text-red-500 text-sm">Error</span>
+              ) : (
+                <span className="text-md font-semibold text-green-600">
+                  ${getPrice("ETH")?.toFixed(2) || "N/A"}
+                </span>
+              )}
+            </div>
+
+            {/* 1INCH Price */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                1INCH:
+              </span>
+              {pricesLoading ? (
+                <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : pricesError ? (
+                <span className="text-red-500 text-sm">Error</span>
+              ) : (
+                <span className="text-md font-semibold text-blue-600">
+                  ${getPrice("1INCH")?.toFixed(4) || "N/A"}
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Last Updated */}
+          <div className="text-right">
+            {pricesLastUpdated && (
+              <div className="text-xs text-muted-foreground">
+                Updated: {new Date(pricesLastUpdated).toLocaleTimeString()}
+              </div>
+            )}
+            {pricesError && (
+              <div className="text-xs text-red-500">Price fetch failed</div>
+            )}
           </div>
         </div>
       </div>

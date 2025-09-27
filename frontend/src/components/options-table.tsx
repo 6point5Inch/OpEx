@@ -197,8 +197,9 @@ export function OptionsTable({
   );
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <div className="w-full h-[78vh]">
+      <Card className=" h-full w-full overflow-scroll">
+        {/* <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="text-xl font-bold">
             Options Chain -{" "}
@@ -220,180 +221,202 @@ export function OptionsTable({
             </span>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {/* Call Options Headers */}
-                <TableHead className="text-center text-green-600 dark:text-green-400">
-                  Bid
-                </TableHead>
-                <TableHead className="text-center text-green-600 dark:text-green-400">
-                  Mark
-                </TableHead>
-                <TableHead className="text-center text-green-600 dark:text-green-400">
-                  Ask
-                </TableHead>
+      </CardHeader> */}
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {/* Call Options Headers */}
+                  <TableHead className="text-center text-green-600 dark:text-green-400">
+                    Bid
+                  </TableHead>
+                  <TableHead className="text-center text-green-600 dark:text-green-400">
+                    Mark
+                  </TableHead>
+                  <TableHead className="text-center text-green-600 dark:text-green-400">
+                    Ask
+                  </TableHead>
 
-                {/* Strike Price */}
-                <TableHead className="text-center font-bold border-x-2 border-border bg-muted/20">
-                  Strike
-                </TableHead>
+                  {/* Strike Price */}
+                  <TableHead className="text-center font-bold border-x-2 border-border bg-muted/20">
+                    Strike
+                  </TableHead>
 
-                {/* Put Options Headers */}
-                <TableHead className="text-center text-red-600 dark:text-red-400">
-                  Bid
-                </TableHead>
-                <TableHead className="text-center text-red-600 dark:text-red-400">
-                  Mark
-                </TableHead>
-                <TableHead className="text-center text-red-600 dark:text-red-400">
-                  Ask
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map((row, index) => (
-                <TableRow
-                  key={`${row.strikePrice}-${
-                    row.calls.instrumentName || index
-                  }-${row.puts.instrumentName || index}`}
-                  className="hover:bg-transparent"
-                >
-                  {/* Call Options Cells */}
-                  <TableCell
-                    className={getEnhancedCellClassName(
-                      row.strikePrice,
-                      "call"
-                    )}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "call", row.calls)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "call", row.calls)
-                    }
-                  >
-                    {formatNumber(row.calls.bid)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(
-                      row.strikePrice,
-                      "call"
-                    )}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "call", row.calls)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "call", row.calls)
-                    }
-                  >
-                    <span className="font-semibold">
-                      {formatNumber(row.calls.mark)}
-                    </span>
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(
-                      row.strikePrice,
-                      "call"
-                    )}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "call", row.calls)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "call", row.calls)
-                    }
-                  >
-                    {formatNumber(row.calls.ask)}
-                  </TableCell>
-
-                  {/* Strike Price Column */}
-                  <TableCell
-                    className={cn(
-                      "text-center font-bold border-x-2 border-border bg-muted/20 relative",
-                      isNearestStrike(row.strikePrice) &&
-                        "bg-yellow-100 dark:bg-yellow-900/30 ring-2 ring-yellow-400 dark:ring-yellow-500"
-                    )}
-                  >
-                    <div className="flex flex-col items-center">
-                      <span
-                        className={cn(
-                          "text-lg font-bold",
-                          isNearestStrike(row.strikePrice)
-                            ? "text-yellow-800 dark:text-yellow-200"
-                            : isInTheMoney(row.strikePrice, "call") ||
-                              isInTheMoney(row.strikePrice, "put")
-                            ? "text-yellow-600 dark:text-yellow-400"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {formatNumber(row.strikePrice, 6)}
-                      </span>
-                      <div className="flex gap-1 mt-1">
-                        {isNearestStrike(row.strikePrice) && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-yellow-200 dark:bg-yellow-800/40 text-yellow-800 dark:text-yellow-200 border-yellow-400"
-                          >
-                            NEAREST
-                          </Badge>
-                        )}
-                        {(isInTheMoney(row.strikePrice, "call") ||
-                          isInTheMoney(row.strikePrice, "put")) && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-yellow-100 dark:bg-yellow-900/20"
-                          >
-                            ITM
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Put Options Cells */}
-                  <TableCell
-                    className={getEnhancedCellClassName(row.strikePrice, "put")}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "put", row.puts)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "put", row.puts)
-                    }
-                  >
-                    {formatNumber(row.puts.bid)}
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(row.strikePrice, "put")}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "put", row.puts)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "put", row.puts)
-                    }
-                  >
-                    <span className="font-semibold">
-                      {formatNumber(row.puts.mark)}
-                    </span>
-                  </TableCell>
-                  <TableCell
-                    className={getEnhancedCellClassName(row.strikePrice, "put")}
-                    onClick={() =>
-                      handleCellClick(row.strikePrice, "put", row.puts)
-                    }
-                    onDoubleClick={() =>
-                      handleCellDoubleClick(row.strikePrice, "put", row.puts)
-                    }
-                  >
-                    {formatNumber(row.puts.ask)}
-                  </TableCell>
+                  {/* Put Options Headers */}
+                  <TableHead className="text-center text-red-600 dark:text-red-400">
+                    Bid
+                  </TableHead>
+                  <TableHead className="text-center text-red-600 dark:text-red-400">
+                    Mark
+                  </TableHead>
+                  <TableHead className="text-center text-red-600 dark:text-red-400">
+                    Ask
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {filteredData.map((row, index) => (
+                  <TableRow
+                    key={`${row.strikePrice}-${
+                      row.calls.instrumentName || index
+                    }-${row.puts.instrumentName || index}`}
+                    className="hover:bg-transparent"
+                  >
+                    {/* Call Options Cells */}
+                    <TableCell
+                      className={getEnhancedCellClassName(
+                        row.strikePrice,
+                        "call"
+                      )}
+                      onClick={() =>
+                        handleCellClick(row.strikePrice, "call", row.calls)
+                      }
+                      onDoubleClick={() =>
+                        handleCellDoubleClick(
+                          row.strikePrice,
+                          "call",
+                          row.calls
+                        )
+                      }
+                    >
+                      {formatNumber(row.calls.bid)}
+                    </TableCell>
+                    <TableCell
+                      className={getEnhancedCellClassName(
+                        row.strikePrice,
+                        "call"
+                      )}
+                      onClick={() =>
+                        handleCellClick(row.strikePrice, "call", row.calls)
+                      }
+                      onDoubleClick={() =>
+                        handleCellDoubleClick(
+                          row.strikePrice,
+                          "call",
+                          row.calls
+                        )
+                      }
+                    >
+                      <span className="font-semibold">
+                        {formatNumber(row.calls.mark)}
+                      </span>
+                    </TableCell>
+                    <TableCell
+                      className={getEnhancedCellClassName(
+                        row.strikePrice,
+                        "call"
+                      )}
+                      onClick={() =>
+                        handleCellClick(row.strikePrice, "call", row.calls)
+                      }
+                      onDoubleClick={() =>
+                        handleCellDoubleClick(
+                          row.strikePrice,
+                          "call",
+                          row.calls
+                        )
+                      }
+                    >
+                      {formatNumber(row.calls.ask)}
+                    </TableCell>
+
+                    {/* Strike Price Column */}
+                    <TableCell
+                      className={cn(
+                        "text-center font-bold border-x-2 border-border bg-muted/20 relative",
+                        isNearestStrike(row.strikePrice) &&
+                          "bg-yellow-100 dark:bg-yellow-900/30 ring-2 ring-yellow-400 dark:ring-yellow-500"
+                      )}
+                    >
+                      <div className="flex flex-col items-center">
+                        <span
+                          className={cn(
+                            "text-lg font-bold",
+                            isNearestStrike(row.strikePrice)
+                              ? "text-yellow-800 dark:text-yellow-200"
+                              : isInTheMoney(row.strikePrice, "call") ||
+                                isInTheMoney(row.strikePrice, "put")
+                              ? "text-yellow-600 dark:text-yellow-400"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {formatNumber(row.strikePrice, 6)}
+                        </span>
+                        <div className="flex gap-1 mt-1">
+                          {isNearestStrike(row.strikePrice) && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-yellow-200 dark:bg-yellow-800/40 text-yellow-800 dark:text-yellow-200 border-yellow-400"
+                            >
+                              NEAREST
+                            </Badge>
+                          )}
+                          {(isInTheMoney(row.strikePrice, "call") ||
+                            isInTheMoney(row.strikePrice, "put")) && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-yellow-100 dark:bg-yellow-900/20"
+                            >
+                              ITM
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    {/* Put Options Cells */}
+                    <TableCell
+                      className={getEnhancedCellClassName(
+                        row.strikePrice,
+                        "put"
+                      )}
+                      onClick={() =>
+                        handleCellClick(row.strikePrice, "put", row.puts)
+                      }
+                      onDoubleClick={() =>
+                        handleCellDoubleClick(row.strikePrice, "put", row.puts)
+                      }
+                    >
+                      {formatNumber(row.puts.bid)}
+                    </TableCell>
+                    <TableCell
+                      className={getEnhancedCellClassName(
+                        row.strikePrice,
+                        "put"
+                      )}
+                      onClick={() =>
+                        handleCellClick(row.strikePrice, "put", row.puts)
+                      }
+                      onDoubleClick={() =>
+                        handleCellDoubleClick(row.strikePrice, "put", row.puts)
+                      }
+                    >
+                      <span className="font-semibold">
+                        {formatNumber(row.puts.mark)}
+                      </span>
+                    </TableCell>
+                    <TableCell
+                      className={getEnhancedCellClassName(
+                        row.strikePrice,
+                        "put"
+                      )}
+                      onClick={() =>
+                        handleCellClick(row.strikePrice, "put", row.puts)
+                      }
+                      onDoubleClick={() =>
+                        handleCellDoubleClick(row.strikePrice, "put", row.puts)
+                      }
+                    >
+                      {formatNumber(row.puts.ask)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
