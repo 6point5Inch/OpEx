@@ -87,39 +87,49 @@ export function useRealTimeChartData(): UseRealTimeChartDataReturn {
       return; // Ignore updates for different instruments
     }
 
-    setChartData((prevData) => {
-      // Create a new data point from the update
-      const newDataPoint: ChartDataPoint = {
-        timestamp: update.data.timestamp,
-        date: new Date(update.data.timestamp),
-        open: update.data.heston_price,
-        high: update.data.heston_price,
-        low: update.data.heston_price,
-        close: update.data.heston_price,
-      };
+    setChartData((prevData: ChartDataPoint[]) => {
+      const updateTime = new Date(update.data.timestamp).getTime();
+      const timeInterval = 10 * 1000; // 60 seconds in milliseconds
+      const intervalStart =
+        Math.floor(updateTime / timeInterval) * timeInterval;
+      const intervalTimestamp = new Date(intervalStart).toISOString();
 
-      // Check if we already have data for this timestamp
-      const existingIndex = prevData.findIndex(
-        (point) => point.timestamp === newDataPoint.timestamp
-      );
+      // Find the candle for this 60-second interval
+      const existingIndex = prevData.findIndex((point: ChartDataPoint) => {
+        const pointInterval =
+          Math.floor(new Date(point.timestamp).getTime() / timeInterval) *
+          timeInterval;
+        return pointInterval === intervalStart;
+      });
 
       if (existingIndex >= 0) {
-        // Update existing data point
+        // Update existing candle with new price data
         const updatedData = [...prevData];
+        const existingCandle = updatedData[existingIndex];
+
         updatedData[existingIndex] = {
-          ...updatedData[existingIndex],
-          close: newDataPoint.close,
-          high: Math.max(updatedData[existingIndex].high, newDataPoint.high),
-          low: Math.min(updatedData[existingIndex].low, newDataPoint.low),
+          ...existingCandle,
+          close: update.data.heston_price, // Always update close to latest price
+          high: Math.max(existingCandle.high, update.data.heston_price),
+          low: Math.min(existingCandle.low, update.data.heston_price),
+          timestamp: intervalTimestamp, // Keep consistent interval timestamp
+          date: new Date(intervalStart),
         };
         return updatedData;
       } else {
-        // Add new data point and keep only last 100 points for performance
-        const updatedData = [...prevData, newDataPoint].slice(-100);
-        return updatedData.sort(
-          (a, b) =>
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
+        // Create new candle for this 10-second interval
+        const newCandle: ChartDataPoint = {
+          timestamp: intervalTimestamp,
+          date: new Date(intervalStart),
+          open: update.data.heston_price,
+          high: update.data.heston_price,
+          low: update.data.heston_price,
+          close: update.data.heston_price,
+        };
+
+        // Add new candle and keep only last 100 points for performance
+        const updatedData = [...prevData, newCandle].slice(-100);
+        return updatedData.sort((a, b) => a.date.getTime() - b.date.getTime());
       }
     });
   }, []);
@@ -174,7 +184,7 @@ export function useRealTimeChartData(): UseRealTimeChartDataReturn {
       },
       onHistory: handleHistoryData,
       onUpdate: handleRealtimeUpdate,
-      onError: (error) => {
+      onError: (error: string) => {
         console.error("📈 Chart WebSocket error:", error);
         setError("WebSocket connection error");
       },
