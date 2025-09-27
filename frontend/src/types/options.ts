@@ -12,6 +12,7 @@ export interface OptionsData {
     position: number;
     volume?: number;
     openInterest?: number;
+    instrumentName?: string;
   };
   puts: {
     delta: number;
@@ -25,6 +26,7 @@ export interface OptionsData {
     position: number;
     volume?: number;
     openInterest?: number;
+    instrumentName?: string;
   };
 }
 
@@ -33,6 +35,7 @@ export interface SelectedOption {
   type: "call" | "put";
   side: "buy" | "sell";
   data: OptionsData["calls"] | OptionsData["puts"];
+  instrumentName?: string;
 }
 
 export type OptionType = "call" | "put";

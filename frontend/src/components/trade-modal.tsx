@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SelectedOption, OptionSide } from "@/types/options";
 import { Chart } from "react-google-charts";
+import { useOptionHistory } from "@/hooks/useOptionHistory";
+import { RefreshCw, AlertCircle } from "lucide-react";
 
 interface TradeModalProps {
   isOpen: boolean;
@@ -16,46 +18,76 @@ interface TradeModalProps {
   selectedOption: SelectedOption | null;
 }
 
-// Chart data for candlestick chart
-const chartData = [
-  ["Day", "", "", "", ""],
-  ["Mon", 20, 28, 38, 45],
-  ["Tue", 31, 38, 55, 66],
-  ["Wed", 50, 55, 77, 80],
-  ["Thu", 77, 77, 66, 50],
-  ["Fri", 68, 66, 22, 15],
-];
-
-const chartOptions = {
+const getChartOptions = (isDark: boolean = false) => ({
   legend: "none",
-  bar: { groupWidth: "100%" }, // Remove space between bars.
+  bar: { groupWidth: "100%" },
   candlestick: {
-    fallingColor: { strokeWidth: 0, fill: "#a52714" }, // red
-    risingColor: { strokeWidth: 0, fill: "#0f9d58" }, // green
+    fallingColor: { strokeWidth: 0, fill: "#ef4444" }, // red
+    risingColor: { strokeWidth: 0, fill: "#22c55e" }, // green
   },
   backgroundColor: "transparent",
   hAxis: {
-    textStyle: { color: "#666" },
-    gridlines: { color: "#333" },
+    textStyle: { color: isDark ? "#9ca3af" : "#666" },
+    gridlines: { color: isDark ? "#374151" : "#e5e7eb" },
   },
   vAxis: {
-    textStyle: { color: "#666" },
-    gridlines: { color: "#333" },
+    textStyle: { color: isDark ? "#9ca3af" : "#666" },
+    gridlines: { color: isDark ? "#374151" : "#e5e7eb" },
   },
-};
+});
 
-// Hardcoded order book data
-const orderBookData = [
-  { price: 387.4, size: 80.0, ivPercent: 6.8, side: "ask" },
-  { price: 307.4, size: 75.0, ivPercent: 27.6, side: "ask" },
-  { price: 232.4, size: 75.0, ivPercent: 28.9, side: "ask" },
-  { price: 157.4, size: 75.0, ivPercent: 29.8, side: "ask" },
-  { price: 82.4, size: 69.9, ivPercent: 30.2, side: "ask" },
-  { price: 12.5, size: 12.5, ivPercent: 30.6, side: "bid" },
-  { price: 82.4, size: 69.9, ivPercent: 30.2, side: "bid" },
-  { price: 157.4, size: 75.0, ivPercent: 29.8, side: "bid" },
-  { price: 232.4, size: 75.0, ivPercent: 28.9, side: "bid" },
-  { price: 307.4, size: 75.0, ivPercent: 27.6, side: "bid" },
+// Create placeholder order book data with -69 values where data is not available
+const createOrderBookData = (selectedOption: SelectedOption) => [
+  { price: selectedOption.data.ask, size: -69, ivPercent: -69, side: "ask" },
+  {
+    price: selectedOption.data.ask * 0.98,
+    size: -69,
+    ivPercent: -69,
+    side: "ask",
+  },
+  {
+    price: selectedOption.data.ask * 0.96,
+    size: -69,
+    ivPercent: -69,
+    side: "ask",
+  },
+  {
+    price: selectedOption.data.ask * 0.94,
+    size: -69,
+    ivPercent: -69,
+    side: "ask",
+  },
+  {
+    price: selectedOption.data.ask * 0.92,
+    size: -69,
+    ivPercent: -69,
+    side: "ask",
+  },
+  { price: selectedOption.data.bid, size: -69, ivPercent: -69, side: "bid" },
+  {
+    price: selectedOption.data.bid * 1.02,
+    size: -69,
+    ivPercent: -69,
+    side: "bid",
+  },
+  {
+    price: selectedOption.data.bid * 1.04,
+    size: -69,
+    ivPercent: -69,
+    side: "bid",
+  },
+  {
+    price: selectedOption.data.bid * 1.06,
+    size: -69,
+    ivPercent: -69,
+    side: "bid",
+  },
+  {
+    price: selectedOption.data.bid * 1.08,
+    size: -69,
+    ivPercent: -69,
+    side: "bid",
+  },
 ];
 
 // Trading content component using Aceternity's modal system
@@ -70,6 +102,13 @@ const TradeModalContent = ({
   const [contracts, setContracts] = useState<string>("1");
   const [activeTab, setActiveTab] = useState<string>("orderbook");
 
+  // Fetch option history data for the chart
+  const {
+    chartData,
+    loading: chartLoading,
+    error: chartError,
+  } = useOptionHistory(selectedOption.instrumentName);
+
   const handleSubmit = () => {
     // Here you would implement the actual trading logic
     console.log("Trade submitted:", {
@@ -77,6 +116,7 @@ const TradeModalContent = ({
       optionType: selectedOption.type,
       side,
       contracts: parseFloat(contracts),
+      instrumentName: selectedOption.instrumentName,
     });
 
     // Reset form and close modal
@@ -85,19 +125,29 @@ const TradeModalContent = ({
     onClose();
   };
 
-  const formatNumber = (value: number, decimals: number = 2): string => {
+  const formatNumber = (
+    value: number | undefined,
+    decimals: number = 2
+  ): string => {
+    if (value === undefined || value === -69) return "-";
     return value.toFixed(decimals);
   };
 
-  const formatPercentage = (value: number): string => {
+  const formatPercentage = (value: number | undefined): string => {
+    if (value === undefined || value === -69) return "-";
     return `${(value * 100).toFixed(1)}%`;
   };
 
   const calculateTotalCost = (): number => {
+    if (selectedOption.data.ask === -69 || selectedOption.data.bid === -69)
+      return 0;
     const price =
       side === "buy" ? selectedOption.data.ask : selectedOption.data.bid;
     return price * parseFloat(contracts || "0");
   };
+
+  // Create order book data based on selected option
+  const orderBookData = createOrderBookData(selectedOption);
 
   // Order Book Component
   const OrderBookTab = () => (
@@ -111,7 +161,7 @@ const TradeModalContent = ({
       <div className="space-y-1">
         {orderBookData.map((order, index) => (
           <div
-            key={index}
+            key={`${order.side}-${order.price}-${index}`}
             className={`grid grid-cols-4 gap-4 text-sm px-2 py-1 rounded ${
               order.side === "ask"
                 ? "bg-red-900/20 text-red-300"
@@ -121,7 +171,7 @@ const TradeModalContent = ({
             <div>{formatNumber(order.size)}</div>
             <div>{formatNumber(order.size)}</div>
             <div>{formatNumber(order.ivPercent, 1)}</div>
-            <div className="font-medium">{formatNumber(order.price, 1)}</div>
+            <div className="font-medium">{formatNumber(order.price, 4)}</div>
           </div>
         ))}
       </div>
@@ -129,17 +179,55 @@ const TradeModalContent = ({
   );
 
   // Chart Component
-  const ChartTab = () => (
-    <div className="h-full bg-gray-900 rounded p-2">
-      <Chart
-        chartType="CandlestickChart"
-        width="100%"
-        height="100%"
-        data={chartData}
-        options={chartOptions}
-      />
-    </div>
-  );
+  const ChartTab = () => {
+    // Convert chart data to Google Charts format
+    const googleChartsData = [
+      ["Time", "Low", "Open", "Close", "High"],
+      ...chartData.map((point) => [
+        point.date.toLocaleTimeString(),
+        point.low,
+        point.open,
+        point.close,
+        point.high,
+      ]),
+    ];
+
+    if (chartLoading) {
+      return (
+        <div className="h-full bg-gray-900 rounded p-2 flex items-center justify-center">
+          <div className="flex items-center space-x-2 text-gray-400">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            <span>Loading chart data...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (chartError || chartData.length === 0) {
+      return (
+        <div className="h-full bg-gray-900 rounded p-2 flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-2 text-gray-400">
+            <AlertCircle className="h-8 w-8" />
+            <span className="text-sm text-center">
+              {chartError || "No chart data available"}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-full bg-gray-900 rounded p-2">
+        <Chart
+          chartType="CandlestickChart"
+          width="100%"
+          height="100%"
+          data={googleChartsData}
+          options={getChartOptions(true)}
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-[80vh] bg-black text-white">
@@ -175,25 +263,25 @@ const TradeModalContent = ({
               <div className="flex justify-between">
                 <span className="text-gray-400">Mark Price:</span>
                 <span className="text-white">
-                  ${formatNumber(selectedOption.data.mark)}
+                  ${formatNumber(selectedOption.data.mark, 6)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Bid:</span>
                 <span className="text-green-400">
-                  ${formatNumber(selectedOption.data.bid)}
+                  ${formatNumber(selectedOption.data.bid, 6)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Ask:</span>
                 <span className="text-red-400">
-                  ${formatNumber(selectedOption.data.ask)}
+                  ${formatNumber(selectedOption.data.ask, 6)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Delta:</span>
                 <span className="text-white">
-                  {formatNumber(selectedOption.data.delta)}
+                  {formatNumber(selectedOption.data.delta, 3)}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -208,19 +296,23 @@ const TradeModalContent = ({
                   {formatPercentage(selectedOption.data.ivAsk)}
                 </span>
               </div>
-              {selectedOption.data.volume && (
+              <div className="flex justify-between">
+                <span className="text-gray-400">Volume:</span>
+                <span className="text-white">
+                  {formatNumber(selectedOption.data.volume)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Open Interest:</span>
+                <span className="text-white">
+                  {formatNumber(selectedOption.data.openInterest)}
+                </span>
+              </div>
+              {selectedOption.instrumentName && (
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Volume:</span>
-                  <span className="text-white">
-                    {selectedOption.data.volume}
-                  </span>
-                </div>
-              )}
-              {selectedOption.data.openInterest && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Open Interest:</span>
-                  <span className="text-white">
-                    {selectedOption.data.openInterest}
+                  <span className="text-gray-400">Instrument:</span>
+                  <span className="text-white font-mono text-xs">
+                    {selectedOption.instrumentName}
                   </span>
                 </div>
               )}
@@ -255,9 +347,9 @@ const TradeModalContent = ({
                   handleSubmit();
                 }}
                 className="bg-green-600 hover:bg-green-700 text-white h-12 text-lg font-semibold"
-                disabled={!contracts}
+                disabled={!contracts || selectedOption.data.ask === -69}
               >
-                Buy ${formatNumber(selectedOption.data.ask)}
+                Buy ${formatNumber(selectedOption.data.ask, 6)}
               </Button>
               <Button
                 onClick={() => {
@@ -265,9 +357,9 @@ const TradeModalContent = ({
                   handleSubmit();
                 }}
                 className="bg-red-600 hover:bg-red-700 text-white h-12 text-lg font-semibold"
-                disabled={!contracts}
+                disabled={!contracts || selectedOption.data.bid === -69}
               >
-                Sell ${formatNumber(selectedOption.data.bid)}
+                Sell ${formatNumber(selectedOption.data.bid, 6)}
               </Button>
             </div>
 
@@ -282,7 +374,7 @@ const TradeModalContent = ({
                   <div className="flex justify-between">
                     <span className="text-gray-400">Est. Total:</span>
                     <span className="text-white font-medium">
-                      ${formatNumber(calculateTotalCost())}
+                      ${formatNumber(calculateTotalCost(), 6)}
                     </span>
                   </div>
                 </div>

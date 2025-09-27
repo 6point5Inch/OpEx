@@ -34,15 +34,15 @@ export function OptionsTable({
   timeToExpiry,
 }: OptionsTableProps) {
   const formatNumber = useCallback(
-    (value: number, decimals: number = 2): string => {
-      if (value === 0) return "-";
+    (value: number, decimals: number = 8): string => {
+      if (value === 0 || value === -69) return "-";
       return value.toFixed(decimals);
     },
     []
   );
 
   const formatPercentage = useCallback((value: number): string => {
-    if (value === 0) return "-";
+    if (value === 0 || value === -69) return "-";
     return `${(value * 100).toFixed(1)}%`;
   }, []);
 
@@ -79,6 +79,7 @@ export function OptionsTable({
         type: optionType,
         side: "buy", // Default to buy, can be changed in modal
         data,
+        instrumentName: data.instrumentName,
       };
       onOptionSelect(option);
     },
@@ -96,6 +97,7 @@ export function OptionsTable({
         type: optionType,
         side: "buy",
         data,
+        instrumentName: data.instrumentName,
       };
       onOptionDoubleClick(option);
     },
@@ -121,7 +123,10 @@ export function OptionsTable({
           <div className="flex gap-4 text-sm text-muted-foreground">
             <span>Expiry: {expirationDate}</span>
             <span>Time: {timeToExpiry}</span>
-            <span>Underlying: ${formatNumber(underlyingPrice)}</span>
+            <span>
+              Underlying:{" "}
+              {underlyingPrice === -69 ? "-" : `$${underlyingPrice.toFixed(4)}`}
+            </span>
           </div>
         </div>
       </CardHeader>
@@ -195,9 +200,11 @@ export function OptionsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((row) => (
+              {data.map((row, index) => (
                 <TableRow
-                  key={row.strikePrice}
+                  key={`${row.strikePrice}-${
+                    row.calls.instrumentName || index
+                  }-${row.puts.instrumentName || index}`}
                   className="hover:bg-transparent"
                 >
                   {/* Call Options Cells */}
@@ -315,7 +322,7 @@ export function OptionsTable({
                             : "text-muted-foreground"
                         )}
                       >
-                        {formatNumber(row.strikePrice, 0)}
+                        {formatNumber(row.strikePrice, 6)}
                       </span>
                       {isInTheMoney(row.strikePrice, "call") ||
                       isInTheMoney(row.strikePrice, "put") ? (

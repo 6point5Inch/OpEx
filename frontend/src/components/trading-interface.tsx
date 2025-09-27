@@ -85,7 +85,7 @@ function TokenSelector({
           <SelectContent className="bg-stone-800 border-stone-700">
             {Object.entries(tokens).map(([symbol, token]) => (
               <SelectItem
-                key={symbol}
+                key={`select-${symbol}`}
                 value={symbol}
                 className="text-white hover:bg-stone-700"
               >
@@ -657,7 +657,7 @@ export function TradingInterface() {
         <div className="mt-8 space-y-3">
           {Object.entries(tokens).map(([symbol, token]) => (
             <div
-              key={symbol}
+              key={`price-${symbol}`}
               className="flex items-center justify-between py-2"
             >
               <div className="flex items-center space-x-3">
