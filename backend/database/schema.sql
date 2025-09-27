@@ -42,6 +42,27 @@ CREATE TABLE public.crypto_options (
 );
 
 
+-- Table: holdings
+CREATE TABLE public.holdings (
+    id SERIAL PRIMARY KEY,
+    user_address TEXT NOT NULL,
+    instrument_name TEXT NOT NULL,
+    quantity NUMERIC(18, 8) NOT NULL,
+    expiry_date BIGINT NOT NULL,
+    strike_price NUMERIC(18, 8) NOT NULL,
+    option_type VARCHAR(4) NOT NULL,
+    current_price NUMERIC(18, 8),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT holdings_instrument_unique UNIQUE (user_address, instrument_name)
+);
+
+-- Indexes for holdings table
+CREATE INDEX idx_holdings_user_address ON public.holdings (user_address);
+CREATE INDEX idx_holdings_instrument_name ON public.holdings (instrument_name);
+CREATE INDEX idx_holdings_expiry_date ON public.holdings (expiry_date);
+
+
 -- Orders table (PostgreSQL syntax)
 CREATE TABLE IF NOT EXISTS public.orders (
     id SERIAL PRIMARY KEY,
