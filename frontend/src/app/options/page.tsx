@@ -4,9 +4,10 @@ import React, { useState, useEffect } from "react";
 import { OptionsTable } from "@/components/options-table";
 import { TradeModal } from "@/components/trade-modal";
 import { useOptionsData } from "@/hooks/useOptionsData";
+import { useLivePrices } from "@/hooks/useLivePrices";
 import { SelectedOption } from "@/types/options";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle } from "lucide-react";
+import { RefreshCw, AlertCircle, TrendingUp } from "lucide-react";
 
 export default function Options() {
   const [selectedOption, setSelectedOption] = useState<SelectedOption | null>(
@@ -30,6 +31,16 @@ export default function Options() {
     refetch,
     applyFilters,
   } = useOptionsData();
+
+  // Use live prices hook for real-time underlying asset prices
+  const {
+    prices: livePrices,
+    isLoading: pricesLoading,
+    error: pricesError,
+    lastUpdated: pricesLastUpdated,
+    refetch: refetchPrices,
+    getPrice,
+  } = useLivePrices(true, 5000); // Auto-refresh every 5 seconds
 
   const handleOptionSelect = (option: SelectedOption) => {
     setSelectedOption(option);
@@ -148,6 +159,58 @@ export default function Options() {
         )}
       </div>
 
+      {/* Live Prices Display */}
+      <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border">
+        <div className="flex items-center space-x-2">
+          <TrendingUp className="h-5 w-5 text-green-600" />
+          <span className="text-sm font-medium text-muted-foreground">
+            Live Prices:
+          </span>
+        </div>
+
+        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-6">
+          {/* ETH Price */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium">ETH:</span>
+            {pricesLoading ? (
+              <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : pricesError ? (
+              <span className="text-red-500 text-sm">Error</span>
+            ) : (
+              <span className="text-lg font-bold text-green-600">
+                ${getPrice("ETH")?.toFixed(2) || "N/A"}
+              </span>
+            )}
+          </div>
+
+          {/* 1INCH Price */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium">1INCH:</span>
+            {pricesLoading ? (
+              <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : pricesError ? (
+              <span className="text-red-500 text-sm">Error</span>
+            ) : (
+              <span className="text-lg font-bold text-blue-600">
+                ${getPrice("1INCH")?.toFixed(4) || "N/A"}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Last Updated */}
+        <div className="flex-1 text-right">
+          {pricesLastUpdated && (
+            <div className="text-xs text-muted-foreground">
+              Updated: {new Date(pricesLastUpdated).toLocaleTimeString()}
+            </div>
+          )}
+          {pricesError && (
+            <div className="text-xs text-red-500">Price fetch failed</div>
+          )}
+        </div>
+      </div>
+
       {/* Filter Controls */}
       <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-6 md:items-center p-4 bg-muted/20 rounded-lg border">
         {/* Underlying Asset Dropdown */}
@@ -164,10 +227,10 @@ export default function Options() {
             {availableUnderlyingAssets.map((asset) => (
               <option key={asset} value={asset}>
                 {asset === "1INCH"
-                  ? "1INCH/ETH"
+                  ? "1INCH/USDC"
                   : asset === "ETH"
-                  ? "ETH/1INCH"
-                  : `${asset}/1INCH`}
+                  ? "ETH/USDC"
+                  : `${asset}/USDC`}
               </option>
             ))}
           </select>

@@ -307,3 +307,109 @@ export function getUniqueExpiryPeriods(apiData: ApiOptionResponse[]): string[] {
 
   return Array.from(periods).sort();
 }
+
+// Price-related API functions
+export interface LivePriceData {
+  price: number;
+  timestamp: string;
+  symbol: string;
+}
+
+export interface LivePricesResponse {
+  success: boolean;
+  data: Record<string, LivePriceData>;
+  timestamp: string;
+}
+
+export interface DetailedPriceData {
+  symbol: string;
+  price: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: number;
+  timestamp: string;
+}
+
+export interface DetailedPriceResponse {
+  success: boolean;
+  data: DetailedPriceData;
+  timestamp: string;
+}
+
+export interface PriceHistoryResponse {
+  success: boolean;
+  data: DetailedPriceData[];
+  symbol: string;
+  count: number;
+  timestamp: string;
+}
+
+// Fetch live prices for all supported underlying assets
+export async function fetchLivePrices(): Promise<LivePricesResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/prices/live`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching live prices:", error);
+    throw error;
+  }
+}
+
+// Fetch live price for a specific symbol
+export async function fetchLivePrice(
+  symbol: string
+): Promise<DetailedPriceResponse> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/prices/live/${encodeURIComponent(symbol)}`
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching live price for ${symbol}:`, error);
+    throw error;
+  }
+}
+
+// Fetch price history for a specific symbol
+export async function fetchPriceHistory(
+  symbol: string,
+  options: { limit?: number; hours?: number } = {}
+): Promise<PriceHistoryResponse> {
+  try {
+    const params = new URLSearchParams();
+    if (options.limit) params.append("limit", options.limit.toString());
+    if (options.hours) params.append("hours", options.hours.toString());
+
+    const queryString = params.toString();
+    const url = `${API_BASE_URL}/prices/history/${encodeURIComponent(symbol)}${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching price history for ${symbol}:`, error);
+    throw error;
+  }
+}
+
+// Helper function to get underlying price for options calculations
+export async function getUnderlyingPrice(symbol: string): Promise<number> {
+  try {
+    const response = await fetchLivePrice(symbol);
+    return response.data.price;
+  } catch (error) {
+    console.error(`Error getting underlying price for ${symbol}:`, error);
+    return -69; // Fallback value as specified
+  }
+}

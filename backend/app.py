@@ -3,6 +3,7 @@ import subprocess
 import atexit
 import time
 import threading
+from flask_cors import CORS
 from typing import Any, Dict, Optional, List, Tuple
 
 from decimal import Decimal
@@ -22,7 +23,20 @@ from sqlalchemy.exc import IntegrityError
 # -------------------------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Configure CORS for Flask
+CORS(app, 
+     origins="*",
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+
+# Configure SocketIO with CORS
+socketio = SocketIO(app, 
+                   cors_allowed_origins="*",
+                   cors_credentials=True,
+                   logger=True,
+                   engineio_logger=True)
+
 
 # -------------------------
 # Database (Postgres via SQLAlchemy)
@@ -294,6 +308,145 @@ def get_option_history():
     if not rows:
         return jsonify({"error": "No data found for instrument"}), 404
     return jsonify([{k: convert_value(v) for k, v in row.items()} for row in rows])
+
+
+@app.route("/prices/live")
+def get_live_prices():
+    """Get the latest live prices for underlying assets (ETH, 1INCH)"""
+    query = text("""
+        SELECT DISTINCT ON (symbol) 
+            symbol, close as price, timestamp
+        FROM crypto_prices
+        WHERE symbol IN ('ETH', '1INCH')
+        ORDER BY symbol, timestamp DESC
+    """)
+    
+    try:
+        with get_db() as conn:
+            rows = conn.execute(query).mappings().all()
+            
+        if not rows:
+            return jsonify({"error": "No price data available"}), 404
+            
+        # Format the response as a dictionary with symbol as key
+        prices = {}
+        for row in rows:
+            prices[row['symbol']] = {
+                'price': convert_value(row['price']),
+                'timestamp': convert_value(row['timestamp']),
+                'symbol': row['symbol']
+            }
+            
+        return jsonify({
+            'success': True,
+            'data': prices,
+            'timestamp': convert_value(datetime.now(timezone.utc))
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to fetch live prices',
+            'message': str(e)
+        }), 500
+
+
+@app.route("/prices/live/<symbol>")
+def get_live_price_by_symbol(symbol: str):
+    """Get the latest live price for a specific underlying asset"""
+    symbol = symbol.upper()
+    
+    if symbol not in ['ETH', '1INCH']:
+        return jsonify({"error": f"Unsupported symbol: {symbol}"}), 400
+    
+    query = text("""
+        SELECT symbol, close as price, timestamp, open, high, low, volume
+        FROM crypto_prices
+        WHERE symbol = :symbol
+        ORDER BY timestamp DESC
+        LIMIT 1
+    """)
+    
+    try:
+        with get_db() as conn:
+            row = conn.execute(query, {"symbol": symbol}).mappings().first()
+            
+        if not row:
+            return jsonify({"error": f"No price data available for {symbol}"}), 404
+            
+        return jsonify({
+            'success': True,
+            'data': {
+                'symbol': row['symbol'],
+                'price': convert_value(row['price']),
+                'open': convert_value(row['open']),
+                'high': convert_value(row['high']),
+                'low': convert_value(row['low']),
+                'volume': convert_value(row['volume']),
+                'timestamp': convert_value(row['timestamp'])
+            },
+            'timestamp': convert_value(datetime.now(timezone.utc))
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Failed to fetch price for {symbol}',
+            'message': str(e)
+        }), 500
+
+
+@app.route("/prices/history/<symbol>")
+def get_price_history(symbol: str):
+    """Get historical prices for a specific underlying asset"""
+    symbol = symbol.upper()
+    
+    if symbol not in ['ETH', '1INCH']:
+        return jsonify({"error": f"Unsupported symbol: {symbol}"}), 400
+    
+    # Get optional query parameters
+    limit = min(int(request.args.get("limit", "100")), 1000)  # Max 1000 records
+    hours = int(request.args.get("hours", "24"))  # Default last 24 hours
+    
+    query = text("""
+        SELECT symbol, close as price, timestamp, open, high, low, volume
+        FROM crypto_prices
+        WHERE symbol = :symbol 
+        AND timestamp >= NOW() - INTERVAL '%s hours'
+        ORDER BY timestamp DESC
+        LIMIT :limit
+    """ % hours)
+    
+    try:
+        with get_db() as conn:
+            rows = conn.execute(query, {"symbol": symbol, "limit": limit}).mappings().all()
+            
+        if not rows:
+            return jsonify({"error": f"No price history available for {symbol}"}), 404
+            
+        history = []
+        for row in rows:
+            history.append({
+                'symbol': row['symbol'],
+                'price': convert_value(row['price']),
+                'open': convert_value(row['open']),
+                'high': convert_value(row['high']),
+                'low': convert_value(row['low']),
+                'volume': convert_value(row['volume']),
+                'timestamp': convert_value(row['timestamp'])
+            })
+            
+        return jsonify({
+            'success': True,
+            'data': history,
+            'symbol': symbol,
+            'count': len(history),
+            'timestamp': convert_value(datetime.now(timezone.utc))
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Failed to fetch price history for {symbol}',
+            'message': str(e)
+        }), 500
 
 
 @app.post("/api/orders")
@@ -628,4 +781,4 @@ if __name__ == "__main__":
     print("✅ Heston Scheduler started")
 
     print("🚀 Starting Flask-SocketIO server...")
-    socketio.run(app, host="0.0.0.0", port=5000)
+    socketio.run(app, host="0.0.0.0", port=5080)

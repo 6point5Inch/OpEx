@@ -25,7 +25,7 @@ THROTTLE = 2.5
 def fetch_historical_backfill(symbols):
     """Fetch historical data per symbol separately"""
     now = int(time.time())
-    timestamps = [now - i * 10 for i in range(360 * 5)]  # last ~5 hours, every 10s
+    timestamps = [now - i * 2.5 for i in range(360 * 5)]  # last ~5 hours, every 10s
 
     for symbol in symbols:
         feed_id = FEED_MAP[symbol]

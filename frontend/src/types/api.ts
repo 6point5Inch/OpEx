@@ -62,3 +62,40 @@ export interface ChartDataPoint {
   low: number;
   close: number;
 }
+
+// Price-related types
+export interface LivePriceData {
+  price: number;
+  timestamp: string;
+  symbol: string;
+}
+
+export interface LivePricesResponse {
+  success: boolean;
+  data: Record<string, LivePriceData>;
+  timestamp: string;
+}
+
+export interface DetailedPriceData {
+  symbol: string;
+  price: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: number;
+  timestamp: string;
+}
+
+export interface DetailedPriceResponse {
+  success: boolean;
+  data: DetailedPriceData;
+  timestamp: string;
+}
+
+export interface PriceHistoryResponse {
+  success: boolean;
+  data: DetailedPriceData[];
+  symbol: string;
+  count: number;
+  timestamp: string;
+}
