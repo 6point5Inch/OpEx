@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { SelectedOption, OptionSide } from "@/types/options";
 import { Chart } from "react-google-charts";
 import { useRealTimeChartData } from "@/hooks/useRealTimeChartData";
+import { getWebSocketManager, OptionUpdate } from "@/utils/websocket";
 import { RefreshCw, AlertCircle, Wifi, WifiOff } from "lucide-react";
 
 interface TradeModalProps {
@@ -61,6 +62,11 @@ const TradeModalContent = ({
   const [side, setSide] = useState<OptionSide>("buy");
   const [contracts, setContracts] = useState<string>("1");
 
+  // State for real-time option data updates
+  const [realtimeOptionData, setRealtimeOptionData] =
+    useState<SelectedOption>(selectedOption);
+  const [isOptionConnected, setIsOptionConnected] = useState<boolean>(false);
+
   // Real-time chart data hook
   const {
     chartData,
@@ -70,6 +76,80 @@ const TradeModalContent = ({
     subscribe,
     unsubscribe,
   } = useRealTimeChartData();
+
+  // Handle real-time option price updates
+  useEffect(() => {
+    if (!isOpen || !selectedOption?.instrumentName) return;
+
+    const wsManager = getWebSocketManager();
+
+    // Set up websocket event handlers for option price updates
+    const handleOptionUpdate = (update: OptionUpdate) => {
+      // Check if this update is for our selected option
+      if (update.data.instrument_name === selectedOption.instrumentName) {
+        console.log(
+          "🔄 Updating option prices for:",
+          update.data.instrument_name
+        );
+
+        // Update the realtime option data with new heston_price
+        setRealtimeOptionData((prev) => {
+          const newHestonPrice = update.data.heston_price;
+
+          // Calculate bid, mark, and ask based on heston_price (same logic as API)
+          const newData = {
+            ...prev.data,
+            bid: newHestonPrice || -69,
+            mark: newHestonPrice || -69,
+            ask: newHestonPrice ? newHestonPrice * 1.02 : -69, // Add small spread for ask
+          };
+
+          return {
+            ...prev,
+            data: newData,
+          };
+        });
+      }
+    };
+
+    const handleConnect = () => {
+      console.log("🔌 Option price WebSocket connected");
+      setIsOptionConnected(true);
+    };
+
+    const handleDisconnect = () => {
+      console.log("🔌 Option price WebSocket disconnected");
+      setIsOptionConnected(false);
+    };
+
+    // Set up event handlers
+    wsManager.setEventHandlers({
+      onConnect: handleConnect,
+      onDisconnect: handleDisconnect,
+      onUpdate: handleOptionUpdate,
+      onError: (error) => {
+        console.error("🔌 Option price WebSocket error:", error);
+        setIsOptionConnected(false);
+      },
+    });
+
+    // Subscribe to updates for this specific instrument
+    wsManager.subscribe(selectedOption.instrumentName);
+
+    // Set initial connection state
+    setIsOptionConnected(wsManager.isConnected());
+
+    return () => {
+      // Unsubscribe when modal closes or option changes
+      if (selectedOption.instrumentName) {
+        wsManager.unsubscribe(selectedOption.instrumentName);
+        console.log(
+          "🔕 Unsubscribed from option updates:",
+          selectedOption.instrumentName
+        );
+      }
+    };
+  }, [isOpen, selectedOption?.instrumentName]);
 
   // Subscribe to chart updates when modal opens
   useEffect(() => {
@@ -84,14 +164,24 @@ const TradeModalContent = ({
     };
   }, [isOpen, selectedOption?.instrumentName, subscribe, unsubscribe]);
 
+  // Reset realtime data when selectedOption changes
+  useEffect(() => {
+    setRealtimeOptionData(selectedOption);
+  }, [selectedOption]);
+
   const handleSubmit = () => {
     // Here you would implement the actual trading logic
     console.log("Trade submitted:", {
-      strikePrice: selectedOption.strikePrice,
-      optionType: selectedOption.type,
+      strikePrice: realtimeOptionData.strikePrice,
+      optionType: realtimeOptionData.type,
       side,
       contracts: parseFloat(contracts),
       instrumentName: selectedOption.instrumentName,
+      prices: {
+        bid: realtimeOptionData.data.bid,
+        ask: realtimeOptionData.data.ask,
+        mark: realtimeOptionData.data.mark,
+      },
     });
 
     // Reset form and close modal
@@ -114,10 +204,15 @@ const TradeModalContent = ({
   };
 
   const calculateTotalCost = (): number => {
-    if (selectedOption.data.ask === -69 || selectedOption.data.bid === -69)
+    if (
+      realtimeOptionData.data.ask === -69 ||
+      realtimeOptionData.data.bid === -69
+    )
       return 0;
     const price =
-      side === "buy" ? selectedOption.data.ask : selectedOption.data.bid;
+      side === "buy"
+        ? realtimeOptionData.data.ask
+        : realtimeOptionData.data.bid;
     return price * parseFloat(contracts || "0");
   };
 
@@ -204,8 +299,16 @@ const TradeModalContent = ({
               {selectedOption.type.toUpperCase()}
             </Badge>
             <span className="text-lg font-semibold">
-              ${formatNumber(selectedOption.strikePrice, 8)}
+              ${formatNumber(realtimeOptionData.strikePrice, 8)}
             </span>
+            {/* Connection status indicator */}
+            <div className="flex items-center ml-2">
+              {isOptionConnected ? (
+                <Wifi className="h-3 w-3 text-green-500" />
+              ) : (
+                <WifiOff className="h-3 w-3 text-red-500" />
+              )}
+            </div>
           </div>
           <div className="text-sm text-gray-400">
             {selectedOption.data.instrumentName}
@@ -215,26 +318,54 @@ const TradeModalContent = ({
         {/* Contract Details */}
         <Card className="bg-gray-900 border-gray-700 mb-6">
           <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-3 text-gray-300">
-              Contract Details
-            </h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-medium text-gray-300">
+                Contract Details
+              </h3>
+              <div className="flex items-center space-x-1">
+                {isOptionConnected ? (
+                  <Wifi className="h-3 w-3 text-green-500" />
+                ) : (
+                  <WifiOff className="h-3 w-3 text-red-500" />
+                )}
+                <span
+                  className={`text-xs ${
+                    isOptionConnected ? "text-green-400" : "text-red-400"
+                  }`}
+                >
+                  {isOptionConnected ? "Live" : "Offline"}
+                </span>
+              </div>
+            </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-400">Mark Price:</span>
-                <span className="text-white">
-                  ${formatNumber(selectedOption.data.mark, 6)}
+                <span
+                  className={`${
+                    isOptionConnected ? "text-white" : "text-gray-400"
+                  } transition-colors`}
+                >
+                  ${formatNumber(realtimeOptionData.data.mark, 6)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Bid:</span>
-                <span className="text-green-400">
-                  ${formatNumber(selectedOption.data.bid, 6)}
+                <span
+                  className={`${
+                    isOptionConnected ? "text-green-400" : "text-gray-400"
+                  } transition-colors`}
+                >
+                  ${formatNumber(realtimeOptionData.data.bid, 6)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Ask:</span>
-                <span className="text-red-400">
-                  ${formatNumber(selectedOption.data.ask, 6)}
+                <span
+                  className={`${
+                    isOptionConnected ? "text-red-400" : "text-gray-400"
+                  } transition-colors`}
+                >
+                  ${formatNumber(realtimeOptionData.data.ask, 6)}
                 </span>
               </div>
               {selectedOption.instrumentName && (
@@ -276,9 +407,9 @@ const TradeModalContent = ({
                   handleSubmit();
                 }}
                 className="bg-green-600 hover:bg-green-700 text-white h-12 text-lg font-semibold"
-                disabled={!contracts || selectedOption.data.ask === -69}
+                disabled={!contracts || realtimeOptionData.data.ask === -69}
               >
-                Buy ${formatNumber(selectedOption.data.ask, 6)}
+                Buy ${formatNumber(realtimeOptionData.data.ask, 6)}
               </Button>
               <Button
                 onClick={() => {
@@ -286,9 +417,9 @@ const TradeModalContent = ({
                   handleSubmit();
                 }}
                 className="bg-red-600 hover:bg-red-700 text-white h-12 text-lg font-semibold"
-                disabled={!contracts || selectedOption.data.bid === -69}
+                disabled={!contracts || realtimeOptionData.data.bid === -69}
               >
-                Sell ${formatNumber(selectedOption.data.bid, 6)}
+                Sell ${formatNumber(realtimeOptionData.data.bid, 6)}
               </Button>
             </div>
 
