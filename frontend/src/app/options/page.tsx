@@ -3,11 +3,17 @@
 import React, { useState, useEffect } from "react";
 import { OptionsTable } from "@/components/options-table";
 import { TradeModal } from "@/components/trade-modal";
-import { useOptionsData } from "@/hooks/useOptionsData";
+import { useRealTimeOptionsData } from "@/hooks/useRealTimeOptionsData";
 import { useLivePrices } from "@/hooks/useLivePrices";
 import { SelectedOption } from "@/types/options";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle, TrendingUp } from "lucide-react";
+import {
+  RefreshCw,
+  AlertCircle,
+  TrendingUp,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 
 export default function Options() {
   const [selectedOption, setSelectedOption] = useState<SelectedOption | null>(
@@ -28,9 +34,10 @@ export default function Options() {
     error,
     availableUnderlyingAssets,
     availableExpiryPeriods,
+    isConnected,
     refetch,
     applyFilters,
-  } = useOptionsData();
+  } = useRealTimeOptionsData();
 
   // Use live prices hook for real-time underlying asset prices
   const {
@@ -138,6 +145,22 @@ export default function Options() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
+            {/* WebSocket Connection Status */}
+            <div className="flex items-center space-x-1">
+              {isConnected ? (
+                <Wifi className="h-4 w-4 text-green-500" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-red-500" />
+              )}
+              <span
+                className={`text-xs ${
+                  isConnected ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {isConnected ? "Live" : "Offline"}
+              </span>
+            </div>
+
             {loading && (
               <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
             )}

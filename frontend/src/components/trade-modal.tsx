@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SelectedOption, OptionSide } from "@/types/options";
 import { Chart } from "react-google-charts";
-import { useOptionHistory } from "@/hooks/useOptionHistory";
-import { RefreshCw, AlertCircle } from "lucide-react";
+import { useRealTimeChartData } from "@/hooks/useRealTimeChartData";
+import { RefreshCw, AlertCircle, Wifi, WifiOff } from "lucide-react";
 
 interface TradeModalProps {
   isOpen: boolean;
@@ -94,20 +94,38 @@ const createOrderBookData = (selectedOption: SelectedOption) => [
 const TradeModalContent = ({
   selectedOption,
   onClose,
+  isOpen,
 }: {
   selectedOption: SelectedOption;
   onClose: () => void;
+  isOpen: boolean;
 }) => {
   const [side, setSide] = useState<OptionSide>("buy");
   const [contracts, setContracts] = useState<string>("1");
   const [activeTab, setActiveTab] = useState<string>("orderbook");
 
-  // Fetch option history data for the chart
+  // Real-time chart data hook
   const {
     chartData,
     loading: chartLoading,
     error: chartError,
-  } = useOptionHistory(selectedOption.instrumentName);
+    isConnected: chartConnected,
+    subscribe,
+    unsubscribe,
+  } = useRealTimeChartData();
+
+  // Subscribe to chart updates when modal opens
+  useEffect(() => {
+    if (isOpen && selectedOption?.instrumentName) {
+      subscribe(selectedOption.instrumentName);
+    }
+
+    return () => {
+      if (!isOpen) {
+        unsubscribe();
+      }
+    };
+  }, [isOpen, selectedOption?.instrumentName, subscribe, unsubscribe]);
 
   const handleSubmit = () => {
     // Here you would implement the actual trading logic
@@ -217,7 +235,23 @@ const TradeModalContent = ({
     }
 
     return (
-      <div className="h-full bg-gray-900 rounded p-2">
+      <div className="h-full bg-gray-900 rounded p-2 relative">
+        {/* Connection Status */}
+        <div className="absolute top-2 right-2 z-10 flex items-center space-x-1">
+          {chartConnected ? (
+            <Wifi className="h-3 w-3 text-green-500" />
+          ) : (
+            <WifiOff className="h-3 w-3 text-red-500" />
+          )}
+          <span
+            className={`text-xs ${
+              chartConnected ? "text-green-400" : "text-red-400"
+            }`}
+          >
+            {chartConnected ? "Live" : "Offline"}
+          </span>
+        </div>
+
         <Chart
           chartType="CandlestickChart"
           width="100%"
@@ -454,7 +488,11 @@ const TradeModalWrapper = ({
           </svg>
         </button>
 
-        <TradeModalContent selectedOption={selectedOption} onClose={onClose} />
+        <TradeModalContent
+          selectedOption={selectedOption}
+          onClose={onClose}
+          isOpen={isOpen}
+        />
       </div>
     </div>
   );

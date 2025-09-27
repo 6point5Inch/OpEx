@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Real-time Options Test — SocketIO</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        padding: 12px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      #messages {
+        border: 1px solid #444;
+        padding: 10px;
+        height: 400px;
+        overflow: auto;
+        background: #000;
+      }
+      .msg {
+        margin: 6px 0;
+        white-space: pre-wrap;
+      }
+      .meta {
+        color: #888;
+        font-size: 0.9em;
+      }
+      .success {
+        color: #22c55e;
+      }
+      .error {
+        color: #ef4444;
+      }
+      .update {
+        color: #3b82f6;
+      }
+      input,
+      button {
+        padding: 8px;
+        margin: 4px;
+        background: #333;
+        color: #fff;
+        border: 1px solid #555;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:hover {
+        background: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Real-time Options Testing</h2>
+
+    <div>
+      <label
+        >Instrument: <input id="instrument" value="ETH-28SEP25-2400-C"
+      /></label>
+      <button id="btnSub">Subscribe</button>
+      <button id="btnUnsub">Unsubscribe</button>
+      <button id="btnClear">Clear Log</button>
+    </div>
+
+    <div style="margin-top: 8px">
+      <strong>Status:</strong>
+      <span id="status" class="error">Disconnected</span> |
+      <strong>Subscribed:</strong> <span id="subscribed">None</span>
+    </div>
+
+    <h3>Messages</h3>
+    <div id="messages" role="log" aria-live="polite"></div>
+
+    <script>
+      // Connect to backend
+      const socket = io("http://localhost:5080");
+      let subscribedInstrument = null;
+
+      // DOM elements
+      const messages = document.getElementById("messages");
+      const status = document.getElementById("status");
+      const subscribed = document.getElementById("subscribed");
+
+      // Helper to append messages
+      function appendMessage(text, className = "", meta = "") {
+        const div = document.createElement("div");
+        div.className = `msg ${className}`;
+
+        const timestamp = new Date().toLocaleTimeString();
+        const content = `[${timestamp}] ${text}`;
+
+        div.textContent = content;
+        if (meta) {
+          const metaDiv = document.createElement("div");
+          metaDiv.className = "meta";
+          metaDiv.textContent = meta;
+          div.appendChild(metaDiv);
+        }
+
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      // Connection events
+      socket.on("connect", () => {
+        appendMessage(
+          "✅ Connected to server",
+          "success",
+          `Socket ID: ${socket.id}`
+        );
+        status.textContent = "Connected";
+        status.className = "success";
+      });
+
+      socket.on("disconnect", (reason) => {
+        appendMessage(`❌ Disconnected: ${reason}`, "error");
+        status.textContent = "Disconnected";
+        status.className = "error";
+      });
+
+      socket.on("connect_error", (error) => {
+        appendMessage(`🔌 Connection error: ${error.message}`, "error");
+      });
+
+      // Options data events
+      socket.on("history", (payload) => {
+        appendMessage(
+          `📈 History received for ${payload.instrument}`,
+          "success",
+          `${payload.data.length} data points`
+        );
+
+        if (payload.data.length > 0) {
+          const latest = payload.data[payload.data.length - 1];
+          appendMessage(
+            `Latest: ${latest.heston_price} @ ${latest.timestamp}`,
+            "meta"
+          );
+        }
+      });
+
+      socket.on("update", (payload) => {
+        appendMessage(
+          `🔄 Update for ${payload.instrument}`,
+          "update",
+          `Price: ${payload.data.heston_price} @ ${payload.data.timestamp}`
+        );
+      });
+
+      socket.on("error", (error) => {
+        appendMessage(`⚠️ Server error: ${JSON.stringify(error)}`, "error");
+      });
+
+      // Button event listeners
+      document.getElementById("btnSub").addEventListener("click", () => {
+        const instrument = document.getElementById("instrument").value.trim();
+        if (!instrument) {
+          alert("Enter instrument name");
+          return;
+        }
+
+        appendMessage(`🔔 Subscribing to: ${instrument}`, "update");
+        socket.emit("subscribe", { instrument });
+        subscribedInstrument = instrument;
+        subscribed.textContent = instrument;
+      });
+
+      document.getElementById("btnUnsub").addEventListener("click", () => {
+        if (!subscribedInstrument) {
+          appendMessage("❌ Not subscribed to any instrument", "error");
+          return;
+        }
+
+        appendMessage(
+          `🔕 Unsubscribing from: ${subscribedInstrument}`,
+          "update"
+        );
+        socket.emit("unsubscribe", { instrument: subscribedInstrument });
+        subscribedInstrument = null;
+        subscribed.textContent = "None";
+      });
+
+      document.getElementById("btnClear").addEventListener("click", () => {
+        messages.innerHTML = "";
+      });
+
+      // Test REST API as well
+      async function testRestAPI() {
+        try {
+          appendMessage("🌐 Testing REST API...", "update");
+          const response = await fetch("http://localhost:5080/options/latest");
+          const data = await response.json();
+          appendMessage(
+            `✅ REST API working: ${data.length} options loaded`,
+            "success"
+          );
+        } catch (error) {
+          appendMessage(`❌ REST API error: ${error.message}`, "error");
+        }
+      }
+
+      // Test API on load
+      setTimeout(testRestAPI, 1000);
+    </script>
+  </body>
+</html>
