@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Options Stream — SocketIO</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; padding: 12px; }
+    #messages { border: 1px solid #ddd; padding: 10px; height: 300px; overflow: auto; }
+    .msg { margin: 6px 0; white-space: pre-wrap; }
+    .meta { color: #666; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h2>Options Stream</h2>
+
+  <div>
+    <label>Instrument: <input id="instrument" value="BTC-30SEP25-52000-C" /></label>
+    <button id="btnSub">Subscribe</button>
+    <button id="btnUnsub">Unsubscribe</button>
+  </div>
+
+  <div style="margin-top:8px;">
+    <input id="msg" type="text" placeholder="Enter your message" style="width:70%">
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <h3>Messages</h3>
+  <div id="messages" role="log" aria-live="polite"></div>
+
+  <script>
+    // connect (adjust path/namespace if needed)
+    const socket = io("http://localhost:5000");
+
+    // safe DOM helper
+    function appendMessage(text, meta) {
+      const messages = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.className = 'msg';
+      const p = document.createElement('div');
+      p.textContent = text;                     // avoid innerHTML with user text (prevents XSS)
+      div.appendChild(p);
+      if (meta) {
+        const m = document.createElement('div');
+        m.className = 'meta';
+        m.textContent = meta;
+        div.appendChild(m);
+      }
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    // join flow
+    const username = prompt("Enter your name:") || `anon-${Math.floor(Math.random()*1000)}`;
+    socket.emit('join', { username });
+
+    socket.on('connect', () => appendMessage('Connected to server', `sid: ${socket.id}`));
+    socket.on('disconnect', () => appendMessage('Disconnected from server'));
+
+    // generic message event
+    socket.on('message', (data) => {
+      // server may send a string or object
+      if (typeof data === 'string') appendMessage(data);
+      else appendMessage(JSON.stringify(data), 'message');
+    });
+
+    // history response
+    socket.on('history', (payload) => {
+      appendMessage(`History for ${payload.instrument} (${payload.data.length} rows)`);
+      payload.data.forEach(d => appendMessage(JSON.stringify(d)));
+    });
+
+    // update response (single row updates)
+    socket.on('update', (payload) => {
+      appendMessage(`Update for ${payload.instrument}: ${JSON.stringify(payload.data)}`);
+    });
+
+    document.getElementById('sendBtn').addEventListener('click', () => {
+      const txt = document.getElementById('msg').value.trim();
+      if (!txt) return;
+      // send as JSON (server can parse)
+      socket.send({ from: username, text: txt, ts: new Date().toISOString() });
+      document.getElementById('msg').value = '';
+    });
+
+    // Subscribe/unsubscribe actions
+    let subscribedInstrument = null;
+    document.getElementById('btnSub').addEventListener('click', () => {
+      const inst = document.getElementById('instrument').value.trim();
+      if (!inst) return alert('Enter instrument name');
+      socket.emit('subscribe', { instrument: inst });
+      subscribedInstrument = inst;
+    });
+    document.getElementById('btnUnsub').addEventListener('click', () => {
+      if (!subscribedInstrument) return;
+      socket.emit('unsubscribe', { instrument: subscribedInstrument });
+      subscribedInstrument = null;
+      appendMessage('Unsubscribed');
+    });
+  </script>
+</body>
+</html>

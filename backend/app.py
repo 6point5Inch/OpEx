@@ -598,10 +598,14 @@ def handle_subscribe(data):
                     """), {"instrument": instrument_name}).mappings().first()
 
                 if row and (last_ts is None or row["timestamp"] > last_ts):
-                    emit('update', {
-                        "instrument": instrument_name,
-                        "data": {k: convert_value(v) for k, v in dict(row).items()}
-                    }, to=sid)
+                    socketio.emit(  # ✅ use socketio.emit, not emit
+                        'update',
+                        {
+                            "instrument": instrument_name,
+                            "data": {k: convert_value(v) for k, v in dict(row).items()}
+                        },
+                        to=sid
+                    )
                     last_ts = row["timestamp"]
             except Exception as e:
                 print("subscribe stream error:", e)
