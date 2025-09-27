@@ -237,3 +237,73 @@ export function calculateTimeToExpiry(expirationTimestamp: number): string {
     return `${hours}h ${minutes}m`;
   }
 }
+
+// Parse instrument name to extract components
+export function parseInstrumentName(instrumentName: string) {
+  // Format: <underlying_asset>-<strike_price>-<expiry_date>-<call/put>
+  // Example: 1INCH-0.219-7d-put
+  const parts = instrumentName.split("-");
+  if (parts.length !== 4) {
+    console.warn(`Invalid instrument name format: ${instrumentName}`);
+    return null;
+  }
+
+  return {
+    underlyingAsset: parts[0],
+    strikePrice: parseFloat(parts[1]),
+    expiryPeriod: parts[2], // e.g., "7d", "30d"
+    optionType: parts[3] as "call" | "put",
+  };
+}
+
+// Filter options data by underlying asset
+export function filterByUnderlyingAsset(
+  apiData: ApiOptionResponse[],
+  underlyingAsset: string
+): ApiOptionResponse[] {
+  return apiData.filter((option) => {
+    const parsed = parseInstrumentName(option.instrument_name);
+    return parsed?.underlyingAsset === underlyingAsset;
+  });
+}
+
+// Filter options data by expiry period
+export function filterByExpiryPeriod(
+  apiData: ApiOptionResponse[],
+  expiryPeriod: string
+): ApiOptionResponse[] {
+  return apiData.filter((option) => {
+    const parsed = parseInstrumentName(option.instrument_name);
+    return parsed?.expiryPeriod === expiryPeriod;
+  });
+}
+
+// Get unique underlying assets from API data
+export function getUniqueUnderlyingAssets(
+  apiData: ApiOptionResponse[]
+): string[] {
+  const assets = new Set<string>();
+
+  apiData.forEach((option) => {
+    const parsed = parseInstrumentName(option.instrument_name);
+    if (parsed) {
+      assets.add(parsed.underlyingAsset);
+    }
+  });
+
+  return Array.from(assets).sort();
+}
+
+// Get unique expiry periods from API data
+export function getUniqueExpiryPeriods(apiData: ApiOptionResponse[]): string[] {
+  const periods = new Set<string>();
+
+  apiData.forEach((option) => {
+    const parsed = parseInstrumentName(option.instrument_name);
+    if (parsed) {
+      periods.add(parsed.expiryPeriod);
+    }
+  });
+
+  return Array.from(periods).sort();
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { OptionsTable } from "@/components/options-table";
 import { TradeModal } from "@/components/trade-modal";
 import { useOptionsData } from "@/hooks/useOptionsData";
@@ -13,6 +13,10 @@ export default function Options() {
     null
   );
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
+  const [selectedUnderlyingAsset, setSelectedUnderlyingAsset] =
+    useState<string>("all");
+  const [selectedExpiryPeriod, setSelectedExpiryPeriod] =
+    useState<string>("all");
 
   const {
     data,
@@ -21,7 +25,10 @@ export default function Options() {
     timeToExpiry,
     loading,
     error,
+    availableUnderlyingAssets,
+    availableExpiryPeriods,
     refetch,
+    applyFilters,
   } = useOptionsData();
 
   const handleOptionSelect = (option: SelectedOption) => {
@@ -45,6 +52,35 @@ export default function Options() {
     if (value === undefined || value === -69) return "-";
     return value.toFixed(2);
   };
+
+  // Handle filter changes
+  const handleUnderlyingAssetChange = (asset: string) => {
+    setSelectedUnderlyingAsset(asset);
+  };
+
+  const handleExpiryPeriodChange = (period: string) => {
+    setSelectedExpiryPeriod(period);
+  };
+
+  // Apply filters when they change
+  useEffect(() => {
+    if (
+      availableUnderlyingAssets.length > 0 ||
+      availableExpiryPeriods.length > 0
+    ) {
+      const underlyingAsset =
+        selectedUnderlyingAsset === "all" ? undefined : selectedUnderlyingAsset;
+      const expiryPeriod =
+        selectedExpiryPeriod === "all" ? undefined : selectedExpiryPeriod;
+      applyFilters(underlyingAsset, expiryPeriod);
+    }
+  }, [
+    selectedUnderlyingAsset,
+    selectedExpiryPeriod,
+    availableUnderlyingAssets,
+    availableExpiryPeriods,
+    applyFilters,
+  ]);
 
   if (loading && data.length === 0) {
     return (
@@ -110,6 +146,95 @@ export default function Options() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Filter Controls */}
+      <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-6 md:items-center p-4 bg-muted/20 rounded-lg border">
+        {/* Underlying Asset Dropdown */}
+        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
+          <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+            Options Chain:
+          </label>
+          <select
+            value={selectedUnderlyingAsset}
+            onChange={(e) => handleUnderlyingAssetChange(e.target.value)}
+            className="px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+          >
+            <option value="all">All Assets</option>
+            {availableUnderlyingAssets.map((asset) => (
+              <option key={asset} value={asset}>
+                {asset === "1INCH"
+                  ? "1INCH/ETH"
+                  : asset === "ETH"
+                  ? "ETH/1INCH"
+                  : `${asset}/1INCH`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Expiry Period Buttons */}
+        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
+          <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+            Expiry:
+          </label>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleExpiryPeriodChange("all")}
+              className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                selectedExpiryPeriod === "all"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-border hover:bg-muted"
+              }`}
+            >
+              All
+            </button>
+            {availableExpiryPeriods.map((period) => (
+              <button
+                key={period}
+                onClick={() => handleExpiryPeriodChange(period)}
+                className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                  selectedExpiryPeriod === period
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground border-border hover:bg-muted"
+                }`}
+              >
+                {period.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Selected Filters Display */}
+        <div className="flex-1 text-right">
+          <div className="text-xs text-muted-foreground">
+            {selectedUnderlyingAsset === "all" &&
+            selectedExpiryPeriod === "all" ? (
+              "Showing all options"
+            ) : (
+              <>
+                Filtered by:{" "}
+                {selectedUnderlyingAsset !== "all" && (
+                  <span className="font-medium">
+                    {selectedUnderlyingAsset === "1INCH"
+                      ? "1INCH/USDC"
+                      : selectedUnderlyingAsset === "ETH"
+                      ? "ETH/USDC"
+                      : `${selectedUnderlyingAsset}/USDC`}
+                  </span>
+                )}
+                {selectedUnderlyingAsset !== "all" &&
+                  selectedExpiryPeriod !== "all" &&
+                  " • "}
+                {selectedExpiryPeriod !== "all" && (
+                  <span className="font-medium">
+                    {selectedExpiryPeriod.toUpperCase()}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       <OptionsTable
