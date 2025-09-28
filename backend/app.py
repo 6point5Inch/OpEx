@@ -246,7 +246,7 @@ def serialize_order(row: RowMapping) -> Dict[str, Any]:
 def start_fetch_price():
     global fetch_price_process
     if fetch_price_process is None or fetch_price_process.poll() is not None:
-        fetch_price_process = subprocess.Popen(["python", "scripts/fetch_price.py"])
+        fetch_price_process = subprocess.Popen(["python3", "scripts/fetch_price.py"])
         print("✅ fetch_price started")
     else:
         print("ℹ️ fetch_price already running")
@@ -254,7 +254,7 @@ def start_fetch_price():
 
 def run_heston_model():
     try:
-        subprocess.run(["python", "scripts/heston_model.py"], check=True)
+        subprocess.run(["python3", "scripts/heston_model.py"], check=True)
         print("✅ heston_model job executed")
     except Exception as e:
         print(f"❌ heston_model failed: {e}")

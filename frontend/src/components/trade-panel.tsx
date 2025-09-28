@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
+import { useLivePrices } from "@/hooks/useLivePrices";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,17 @@ interface ContractAddresses {
     quoteToken: string;
 }
 
+ const {
+    prices: livePrices,
+    isLoading: pricesLoading,
+    error: pricesError,
+    lastUpdated: pricesLastUpdated,
+    refetch: refetchPrices,
+    getPrice,
+  } = useLivePrices(true, 5000); 
+
+
+
 
 
 export function TradePanel({ selectedOption }: TradePanelProps, livePrice: number ) {
@@ -53,12 +65,12 @@ export function TradePanel({ selectedOption }: TradePanelProps, livePrice: numbe
   const [isOptionConnected, setIsOptionConnected] = useState<boolean>(false);
 
    const [addresses] = useState<ContractAddresses>({
-        limitOrderProtocol: "0xEA4C65C75debD5Ce0F87BdDE8d55a0a57aC43088",
-        nft: "0x87C83A6835041016f9aE67eB6cA690Cd718C6B03",
-        engine: "0xBBaf795Af286b56f5255E75c1271aD9a437fFf22",
-        hook: "0x5fcf14BfDc1643CDc4e6e1103A4D402A279Aa2C2",
-        underlyingToken: "0xb0f495A5156a162dE68F1ca4F1b2bb1Dbc6b935E",
-        quoteToken: "0xFADeBc92aEAb2E5C076081489Ec6671bA290843d"
+        limitOrderProtocol: process.env.NEXT_PUBLIC_LIMIT_ORDER_PROTOCOL_ADDRESS || "0xEA4C65C75debD5Ce0F87BdDE8d55a0a57aC43088",
+        nft: process.env.NEXT_PUBLIC_NFT_ADDRESS || "0x87C83A6835041016f9aE67eB6cA690Cd718C6B03",
+        engine: process.env.NEXT_PUBLIC_ENGINE_ADDRESS || "0xBBaf795Af286b56f5255E75c1271aD9a437fFf22",
+        hook: process.env.NEXT_PUBLIC_HOOK_ADDRESS || "0x5fcf14BfDc1643CDc4e6e1103A4D402A279Aa2C2",
+        underlyingToken: process.env.NEXT_PUBLIC_UNDERLYING_TOKEN_ADDRESS || "0xb0f495A5156a162dE68F1ca4F1b2bb1Dbc6b935E",
+        quoteToken: process.env.NEXT_PUBLIC_QUOTE_TOKEN_ADDRESS || "0xFADeBc92aEAb2E5C076081489Ec6671bA290843d"
     });
 
     // Option parameters state
@@ -313,7 +325,7 @@ offsets |= BigInt(len7) << 224n;
 
             const { signer } = await getProviderAndSigner();
             const makerAddress = await signer.getAddress();
-            approveunderlyingTokens();
+            await approveunderlyingTokens();
             
             // Use custom params if provided, otherwise use current state
             const params = customParams || optionParams;
