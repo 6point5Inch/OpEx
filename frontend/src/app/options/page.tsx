@@ -285,7 +285,7 @@ export default function Options() {
             />
           </div>
           <div className="flex-1">
-            <TradePanel selectedOption={selectedOption} />
+            <TradePanel selectedOption={selectedOption} livePrice={getPrice(selectedUnderlyingAsset) || underlyingPrice} />
           </div>
         </div>
       </main>

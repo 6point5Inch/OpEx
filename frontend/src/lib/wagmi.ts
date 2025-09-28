@@ -2,6 +2,7 @@ import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import {
   arbitrum,
   base,
+  baseSepolia,
   mainnet,
   optimism,
   polygon,
@@ -16,6 +17,6 @@ export const config = getDefaultConfig({
   appName: "Genuine Trade",
   projectId:
     process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || FALLBACK_PROJECT_ID,
-  chains: [mainnet, polygon, optimism, arbitrum, base, sepolia, polygonAmoy],
+  chains: [mainnet, polygon, optimism, arbitrum, base, baseSepolia, sepolia, polygonAmoy],
   ssr: true, // If your dApp uses server side rendering (SSR)
 });
