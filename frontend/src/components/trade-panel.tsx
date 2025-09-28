@@ -473,7 +473,7 @@ function buildSignatureComponents(signature: any): { r: string; vs: string } {
             limit: "50",
             makerAsset: addresses.underlyingToken, 
             takerAsset: addresses.quoteToken,
-            option_strike: params.strike
+            StrikePrice: params.strike
         });
 
         const response = await fetch(`http://localhost:5080/api/orders?${queryParams.toString()}`, {
@@ -555,8 +555,8 @@ function buildSignatureComponents(signature: any): { r: string; vs: string } {
 
             const receipt = await tx.wait();
             setStatus(`Order filled successfully! Block: ${receipt.blockNumber}`);
-             const successfully = await fetch(`http://localhost:5080/api/orders?${queryParams.toString()}`, {
-            method: "GET",
+             const successfully = await fetch(`http://localhost:5080/api/orders?${orders.order_hash}/close`, {
+            method: "POST",
             headers: {
                 "Accept": "application/json"
             }
@@ -583,9 +583,9 @@ function buildSignatureComponents(signature: any): { r: string; vs: string } {
     
     const updatedParams = {
       ...optionParams,
-      strike: realtimeOptionData.strikePrice.toString(),
+      strike: realtimeOptionData.strikePrice.toFixed(2),
       size: contracts,
-      premium: realtimeOptionData.data.mark.toString()
+      premium: realtimeOptionData.data.mark.toFixed(2)
     };
     
     setOptionParams(updatedParams);
@@ -609,9 +609,9 @@ function buildSignatureComponents(signature: any): { r: string; vs: string } {
     
     const updatedParams = {
       ...optionParams,
-      strike: realtimeOptionData.strikePrice.toString(),
+      strike: realtimeOptionData.strikePrice.toFixed(2),
       size: contracts,
-      premium: realtimeOptionData.data.mark.toString()
+      premium: realtimeOptionData.data.mark.toFixed(2)
     };
     
     setOptionParams(updatedParams);
