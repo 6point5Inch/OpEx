@@ -509,6 +509,7 @@ def create_order():
     return jsonify({"success": True}), 201
 
 
+# Updated get_orders function with proper large number handling
 @app.get("/api/orders")
 def get_orders():
     # Parse query parameters
@@ -516,6 +517,7 @@ def get_orders():
     maker_asset = request.args.get("makerAsset")
     taker_asset = request.args.get("takerAsset")
     limit = min(int(request.args.get("limit", "50")), 100)
+    option_strike = request.args.get("strikePrice")
     
     if maker_asset:
         validate_address(maker_asset, "makerAsset")
@@ -532,6 +534,9 @@ def get_orders():
     if taker_asset:
         where_clauses.append("taker_asset = :taker_asset")
         params["taker_asset"] = taker_asset
+    if option_strike:
+        where_clauses.append("option_strike = :option_strike")
+        params["option_strike"] = option_strike
     
     where_clause = " AND ".join(where_clauses)
     
@@ -547,11 +552,67 @@ def get_orders():
             rows = conn.execute(sql, params).mappings().all()
             orders = []
             for row in rows:
-                order = {k: convert_value(v) for k, v in row.items()}
+                order = {}
+                for k, v in row.items():
+                    # Handle large numbers that should remain as strings
+                    if k in ["salt", "making_amount", "taking_amount", "maker_traits"] and v:
+                        order[k] = str(v)  # Keep as string for large numbers
+                    else:
+                        order[k] = convert_value(v)
                 orders.append(order)
             return jsonify(orders)
     except Exception as e:
         return jsonify({"statusCode": 500, "message": "DB error", "error": str(e)}), 500
+
+
+# New endpoint to close an order
+@app.post("/api/orders/<orderHash>/close")
+def close_order(orderHash: str):
+    """Mark an order as closed by orderHash"""
+    
+    # First check if order exists
+    check_sql = text("SELECT id, status FROM orders WHERE order_hash = :order_hash")
+    
+    try:
+        with get_db() as conn:
+            existing_order = conn.execute(check_sql, {"order_hash": orderHash}).mappings().first()
+            
+            if not existing_order:
+                return jsonify({
+                    "statusCode": 404, 
+                    "message": "Order not found", 
+                    "error": "Not Found"
+                }), 404
+            
+            if existing_order["status"] == "closed":
+                return jsonify({
+                    "statusCode": 400, 
+                    "message": "Order is already closed", 
+                    "error": "Bad Request"
+                }), 400
+            
+            # Update order status to closed
+            update_sql = text("""
+                UPDATE orders 
+                SET status = 'closed', updated_at = CURRENT_TIMESTAMP 
+                WHERE order_hash = :order_hash
+            """)
+            
+            conn.execute(update_sql, {"order_hash": orderHash})
+            conn.commit()
+            
+            return jsonify({
+                "success": True,
+                "message": "Order marked as closed",
+                "orderHash": orderHash
+            }), 200
+            
+    except Exception as e:
+        return jsonify({
+            "statusCode": 500, 
+            "message": "DB error", 
+            "error": str(e)
+        }), 500
 
 
 @app.get("/api/orders/<orderHash>")
