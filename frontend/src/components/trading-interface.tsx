@@ -715,109 +715,11 @@ offsets |= BigInt(len7) << 224n;
             console.log("Order:", order);
             console.log("Signature:", signature);
             console.log({ order, signature, orderHash });
-            
-            // Validate data before sending
-            console.log("Raw values before payload:", {
-                orderHash: orderHash,
-                collateralAmount: collateralAmount,
-                premium: premium,
-                salt: salt,
-                makerTraits: makerTraits,
-                signature: signature,
-                gap: gap,
-                i: i
-            });
-
-            // Fix the payload structure to match API expectations
-            const payload = { 
-                orderHash, 
-                maker: makerAddress, 
-                makerAsset: addresses.underlyingToken, 
-                takerAsset: addresses.quoteToken, 
-                makingAmount: collateralAmount.toString(), 
-                takingAmount: premium.toString(), 
-                salt: salt.toString(), 
-                makerTraits: makerTraits.toString(), 
-                optionType: "rec", // Changed from "recurring" to fit varchar(4) constraint
-                optionPremium: premium.toString(), 
-                signature: signature,
-                validAt: Math.floor(Date.now() / 1000) + i * gap,
-                // Add potentially missing fields that might be required
-                status: "open",
-                optionStrike: "0", // Add default strike if needed
-                optionExpiry: Math.floor(Date.now() / 1000) + 7*24*60*60, // Add default expiry
-                orderData: "0x", 
-                extensionData: "0x"
-            };
-            
-            // Validate payload before sending
-            console.log("Payload being sent:", JSON.stringify(payload, null, 2));
-            
-            // Check for any undefined or null values
-            const invalidFields = Object.entries(payload).filter(([key, value]) => 
-                value === undefined || value === null || value === "undefined"
-            );
-            
-            if (invalidFields.length > 0) {
-                throw new Error(`Invalid fields in payload: ${invalidFields.map(([key]) => key).join(', ')}`);
-            }
-            
-            let response;
-            let result;
-            
-            try {
-                response = await fetch("http://localhost:5080/api/orders", { 
-                    method: "POST", 
-                    headers: { 
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    }, 
-                    body: JSON.stringify(payload) 
-                });
-                
-                console.log("Response status:", response.status);
-                console.log("Response statusText:", response.statusText);
-                
-                // Try to get response text first to see raw response
-                const responseText = await response.text();
-                console.log("Raw response text:", responseText);
-                
-                // Try to parse as JSON
-                try {
-                    result = JSON.parse(responseText);
-                    console.log("Parsed API Response:", result);
-                } catch (parseError) {
-                    console.error("Failed to parse JSON response:", parseError);
-                    console.log("Response was not valid JSON:", responseText);
-                    throw new Error(`Server returned invalid JSON. Status: ${response.status}, Response: ${responseText.substring(0, 200)}`);
-                }
-                
-            } catch (fetchError: any) {
-                console.error("Fetch error:", fetchError);
-                throw new Error(`Network error: ${fetchError.message || String(fetchError)}`);
-            }
-            
-            if (!response.ok) {
-                console.error("API Error Details:", {
-                    status: response.status,
-                    statusText: response.statusText,
-                    body: result,
-                    url: response.url
-                });
-                
-                // Provide more specific error messages based on status code
-                let errorMessage = result?.message || result?.error || `Server Error: ${response.status} ${response.statusText}`;
-                
-                if (response.status === 500) {
-                    errorMessage = `Server Internal Error: ${errorMessage}. Check server logs for details.`;
-                } else if (response.status === 422) {
-                    errorMessage = `Validation Error: ${errorMessage}`;
-                } else if (response.status === 400) {
-                    errorMessage = `Bad Request: ${errorMessage}`;
-                }
-                
-                throw new Error(errorMessage);
-            }
+                const size = premium;
+            const payload = { orderHash, maker: makerAddress, makerAsset: addresses.underlyingToken, takerAsset: addresses.quoteToken, makingAmount: size.toString(), takingAmount: premium.toString(), salt: salt.toString(), makerTraits: makerTraits.toString(), optionType: "recurring", optionPremium: premium.toString(), signature: signature,  validAt: Math.floor(Date.now() / 1000 ) + i*gap };
+            const response = await fetch("http://localhost:5080/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "Failed to save order");
             console.log(result);
             return result;
         } catch (error: any) {

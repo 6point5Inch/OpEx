@@ -44,14 +44,14 @@ interface ContractAddresses {
     quoteToken: string;
 }
 
- const {
-    prices: livePrices,
-    isLoading: pricesLoading,
-    error: pricesError,
-    lastUpdated: pricesLastUpdated,
-    refetch: refetchPrices,
-    getPrice,
-  } = useLivePrices(true, 5000); 
+//  const {
+//     prices: livePrices,
+//     isLoading: pricesLoading,
+//     error: pricesError,
+//     lastUpdated: pricesLastUpdated,
+//     refetch: refetchPrices,
+//     getPrice,
+//   } = useLivePrices(true, 5000); 
 
 
 
