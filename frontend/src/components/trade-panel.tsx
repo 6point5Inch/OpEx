@@ -15,6 +15,7 @@ import { limitOrderProtocolAbi } from "@/abi/lopabi";
 
 interface TradePanelProps {
   selectedOption: SelectedOption | null;
+  livePrice?: number;
 }
 
 declare global {
@@ -57,7 +58,7 @@ interface ContractAddresses {
 
 
 
-export function TradePanel({ selectedOption }: TradePanelProps, livePrice: number ) {
+export function TradePanel({ selectedOption, livePrice }: TradePanelProps) {
   const [side, setSide] = useState<OptionSide>("buy");
   const [contracts, setContracts] = useState<string>("1");
   const [realtimeOptionData, setRealtimeOptionData] =
